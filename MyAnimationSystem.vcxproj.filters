@@ -86,4 +86,9 @@
       <UniqueIdentifier>{eaa0d54b-12a6-490d-92c9-8ee9d05f2158}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="GASCoreTypes.h.h">
+      <Filter>头文件\Core\Types</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
