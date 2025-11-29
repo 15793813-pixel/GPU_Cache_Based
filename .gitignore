@@ -1,0 +1,19 @@
+# Visual Studio 临时文件
+.vs/
+*.user
+*.suo
+*.opensdf
+*.sdf
+
+# 编译输出目录 (不要上传编译生成的 exe 和 obj 文件)
+x64/
+x86/
+Debug/
+Release/
+ARM/
+ARM64/
+Intermediate/
+Binaries/
+
+# 数据库文件
+*.db
