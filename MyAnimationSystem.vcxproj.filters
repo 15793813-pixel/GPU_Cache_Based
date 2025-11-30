@@ -87,7 +87,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GASCoreTypes.h.h">
+    <ClInclude Include="Core\Types\GASCoreTypes.h.h">
       <Filter>头文件\Core\Types</Filter>
     </ClInclude>
   </ItemGroup>
