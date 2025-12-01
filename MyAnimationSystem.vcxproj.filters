@@ -87,7 +87,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core\Types\GASCoreTypes.h.h">
+    <ClInclude Include="Core\Types\GASCoreTypes.h">
+      <Filter>头文件\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\GASEnums.h">
+      <Filter>头文件\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\GASMath.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\GASFileHelper.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\GASArray.h">
       <Filter>头文件\Core\Types</Filter>
     </ClInclude>
   </ItemGroup>

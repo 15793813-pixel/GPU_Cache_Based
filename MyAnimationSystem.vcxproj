@@ -19,7 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core\Types\GASCoreTypes.h.h" />
+    <ClInclude Include="Core\Types\GASArray.h" />
+    <ClInclude Include="Core\Types\GASCoreTypes.h" />
+    <ClInclude Include="Core\Types\GASEnums.h" />
+    <ClInclude Include="Core\Utils\GASFileHelper.h" />
+    <ClInclude Include="Core\Utils\GASMath.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
