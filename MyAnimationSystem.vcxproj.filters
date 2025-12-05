@@ -102,5 +102,19 @@
     <ClInclude Include="Core\Types\GASArray.h">
       <Filter>头文件\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Types\GASAsset.h">
+      <Filter>头文件\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\GASLogging.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\GASDataConverter.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Core\Utils\GASDataConverter.cpp">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
