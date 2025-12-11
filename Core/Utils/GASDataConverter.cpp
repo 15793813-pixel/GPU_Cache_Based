@@ -1,74 +1,85 @@
-#include "GASDataConverter.h"
+ï»¿#include "GASDataConverter.h"
+
+// ã€ä¿®å¤1ã€‘æ·»åŠ å¿…è¦çš„æ ‡å‡†åº“å¤´æ–‡ä»¶
 #include <cmath>
 #include <cctype>
+#include <algorithm> // å¿…é¡»ï¼ä¿®å¤ std::transform å’Œ std::remove_if æŠ¥é”™
+#include <string>
+#include <vector>
 
 // =============================================================
-// »ù´¡Êı¾İÀàĞÍ×ª»»
+// åŸºç¡€æ•°æ®ç±»å‹è½¬æ¢
 // =============================================================
 
 FGASVector3 GASDataConverter::ToVector3(const aiVector3D& InVec)
 {
-    return FGASVector3(InVec.x, InVec.y, InVec.z);
+    // ã€ä¿®å¤2ã€‘ä½¿ç”¨ {} åˆå§‹åŒ–ï¼Œé¿å… E0169 é”™è¯¯
+    return FGASVector3{ InVec.x, InVec.y, InVec.z };
 }
 
 FGASQuaternion GASDataConverter::ToQuaternion(const aiQuaternion& InQuat)
 {
     // Assimp: w, x, y, z
-    // FGAS: ¼ÙÉèÄãÒ²×ñÑ­Õâ¸öË³Ğò£¬»òÕß x, y, z, w¡£Çë¸ù¾İ GASCoreTypes µ÷Õû¹¹Ôìº¯Êı²ÎÊıË³Ğò
-    return FGASQuaternion(InQuat.x, InQuat.y, InQuat.z, InQuat.w);
+    // æ³¨æ„ï¼šè¯·ç¡®ä¿ä½ çš„ FGASQuaternion å®šä¹‰é¡ºåºä¹Ÿæ˜¯ (x, y, z, w) æˆ–è€…å¯¹åº”çš„æ„é€ å‡½æ•°å‚æ•°é¡ºåºä¸€è‡´
+    return FGASQuaternion{ InQuat.x, InQuat.y, InQuat.z, InQuat.w };
 }
 
 FGASMatrix4x4 GASDataConverter::ToMatrix4x4(const aiMatrix4x4& InMat)
 {
     FGASMatrix4x4 OutMat;
 
-    // Assimp ÊÇ Row-Major (a1, a2, a3, a4 ÊÇµÚÒ»ĞĞ)
-    // Ö±½ÓÄÚ´æ¿½±´Í¨³£ÊÇ×î¿ìµÄ·½·¨£¬µ«ÎªÁËÇåÎúºÍ·ÀÖ¹Ìî³äÎÊÌâ£¬ÎÒÃÇÖğ¸ö¸³Öµ
-    // Èç¹ûÄãµÄ FGASMatrix4x4 Ò²ÊÇ Row-Major£º
-    OutMat.m[0][0] = InMat.a1; OutMat.m[0][1] = InMat.a2; OutMat.m[0][2] = InMat.a3; OutMat.m[0][3] = InMat.a4;
-    OutMat.m[1][0] = InMat.b1; OutMat.m[1][1] = InMat.b2; OutMat.m[1][2] = InMat.b3; OutMat.m[1][3] = InMat.b4;
-    OutMat.m[2][0] = InMat.c1; OutMat.m[2][1] = InMat.c2; OutMat.m[2][2] = InMat.c3; OutMat.m[2][3] = InMat.c4;
-    OutMat.m[3][0] = InMat.d1; OutMat.m[3][1] = InMat.d2; OutMat.m[3][2] = InMat.d3; OutMat.m[3][3] = InMat.d4;
+    // ã€ä¿®å¤3ã€‘ä½¿ç”¨å¤§å†™ M (å¯¹åº”é”™è¯¯ E0135)
+    // å¦‚æœä½ çš„ FGASMatrix4x4 æ˜¯è¡Œä¼˜å…ˆå­˜å‚¨ (Row-Major)ï¼Œå¯ä»¥ç›´æ¥ä¸€ä¸€èµ‹å€¼
+    OutMat.M[0][0] = InMat.a1; OutMat.M[0][1] = InMat.a2; OutMat.M[0][2] = InMat.a3; OutMat.M[0][3] = InMat.a4;
+    OutMat.M[1][0] = InMat.b1; OutMat.M[1][1] = InMat.b2; OutMat.M[1][2] = InMat.b3; OutMat.M[1][3] = InMat.b4;
+    OutMat.M[2][0] = InMat.c1; OutMat.M[2][1] = InMat.c2; OutMat.M[2][2] = InMat.c3; OutMat.M[2][3] = InMat.c4;
+    OutMat.M[3][0] = InMat.d1; OutMat.M[3][1] = InMat.d2; OutMat.M[3][2] = InMat.d3; OutMat.M[3][3] = InMat.d4;
+
+    // ã€å¤‡é€‰æ–¹æ¡ˆã€‘å¦‚æœä¸æƒ³ç®¡æˆå‘˜å˜é‡å« m è¿˜æ˜¯ Mï¼Œä¸”å†…å­˜å¸ƒå±€ä¸€è‡´ï¼ˆéƒ½æ˜¯ 4x4 floatï¼‰ï¼Œå¯ä»¥ç›´æ¥å†…å­˜æ‹·è´ï¼š
+    // memcpy(&OutMat, &InMat, sizeof(float) * 16);
 
     return OutMat;
 }
 
 // =============================================================
-// ×ø±êÏµÓë¿Õ¼ä±ê×¼»¯ (ºËĞÄ¹¦ÄÜ)
+// åæ ‡ç³»ä¸ç©ºé—´æ ‡å‡†åŒ– (æ ¸å¿ƒåŠŸèƒ½)
 // =============================================================
 
 FGASVector3 GASDataConverter::ConvertPositionToLeftHanded(const aiVector3D& InPos)
 {
-    // ·½°¸£º·­×ª Z Öá (ÊÊÅä³£¼ûµÄ RH -> LH ×ª»»)
-    return FGASVector3(InPos.x, InPos.y, -InPos.z);
+    // æ–¹æ¡ˆï¼šç¿»è½¬ Z è½´ (é€‚é…å¸¸è§çš„ RH -> LH è½¬æ¢)
+    return FGASVector3{ InPos.x, InPos.y, -InPos.z };
 }
 
 FGASQuaternion GASDataConverter::ConvertRotationToLeftHanded(const aiQuaternion& InQuat)
 {
-    // ¶ÔÓ¦Î»ÖÃ Z ÖáµÄ·­×ª£¬ËÄÔªÊıĞèÒª·­×ª x ºÍ y ·ÖÁ¿£¬»òÕß z ºÍ w ·ÖÁ¿¡£
-    // ÕâÀï²ÉÓÃ·­×ª Z ÖáµÄĞı×ª±ä»»±ê×¼¹«Ê½: (x, y, -z, -w) µÈ¼ÛÓÚ (-x, -y, z, w)
-    return FGASQuaternion(-InQuat.x, -InQuat.y, InQuat.z, InQuat.w);
+    // å¯¹åº”ä½ç½® Z è½´çš„ç¿»è½¬
+    // æ—‹è½¬å˜æ¢æ ‡å‡†å…¬å¼: (x, y, -z, -w) ç­‰ä»·äº (-x, -y, z, w)
+    // ä½¿ç”¨ {} åˆå§‹åŒ–
+    return FGASQuaternion{ -InQuat.x, -InQuat.y, InQuat.z, InQuat.w };
 }
 
 // =============================================================
-// ÃüÃûÓë×Ö·û´®´¦Àí
+// å‘½åä¸å­—ç¬¦ä¸²å¤„ç†
 // =============================================================
 
 std::string GASDataConverter::NormalizeBoneName(const std::string& InName)
 {
     std::string Result = InName;
 
-    // 1. ÒÆ³ı 'mixamorig:' µÈ³£¼ûÇ°×º (¸ù¾İÏîÄ¿ĞèÇó¶¨ÖÆ)
+    // 1. ç§»é™¤ 'mixamorig:' ç­‰å¸¸è§å‰ç¼€
     size_t ColonPos = Result.find(':');
     if (ColonPos != std::string::npos)
     {
         Result = Result.substr(ColonPos + 1);
     }
 
-    // 2. ÒÆ³ıËùÓĞ¿Õ¸ñ
+    // 2. ç§»é™¤æ‰€æœ‰ç©ºæ ¼
+    // std::remove_if éœ€è¦ <algorithm>
     Result.erase(std::remove_if(Result.begin(), Result.end(), ::isspace), Result.end());
 
-    // 3. È«²¿×ªĞ¡Ğ´ (ÎªÁË Map ²éÕÒµÄÒ»ÖÂĞÔ)
+    // 3. å…¨éƒ¨è½¬å°å†™ (ä¸ºäº† Map æŸ¥æ‰¾çš„ä¸€è‡´æ€§)
+    // ã€ä¿®å¤4ã€‘ä½¿ç”¨ Lambda è¡¨è¾¾å¼åŒ…è£… std::tolowerï¼Œè§£å†³é‡è½½å‡½æ•°åŒ¹é…å¤±è´¥ (E0493/E0260)
     std::transform(Result.begin(), Result.end(), Result.begin(),
         [](unsigned char c) { return std::tolower(c); });
 
@@ -76,20 +87,25 @@ std::string GASDataConverter::NormalizeBoneName(const std::string& InName)
 }
 
 // =============================================================
-// ¸¨Öú¼ÆËã
+// è¾…åŠ©è®¡ç®—
 // =============================================================
 
 void GASDataConverter::DecomposeMatrix(const FGASMatrix4x4& InMat, FGASVector3& OutScale, FGASQuaternion& OutRot, FGASVector3& OutTrans)
 {
-    // ÕâÊÇÒ»¸ö¼ò»¯°æµÄ·Ö½â£¬Èç¹ûÊ¹ÓÃ Assimp£¬¿ÉÒÔÖ±½Óµ÷ÓÃ InMat.Decompose(...)
-    // µ«¼ÈÈ»ÒªÔÚConverterÀï×ö½âñî£¬ÕâÀï¿ÉÒÔÓÃ Assimp µÄÂß¼­»òÕßÊÖĞ´
-    // ÕâÀïÑİÊ¾µ÷ÓÃ Assimp µÄÂß¼­ (¼ÙÉè InMat ÒÑ¾­×ª»Ø Assimp ¸ñÊ½»òÕßÎÒÃÇÖ±½Ó²Ù×÷Êı¾İ)
+    // è¿™æ˜¯ä¸€ä¸ªç®€åŒ–ç‰ˆçš„åˆ†è§£å ä½ç¬¦
+    // å¦‚æœéœ€è¦å®ç°ï¼Œé€šå¸¸éœ€è¦å°† FGASMatrix4x4 è½¬å› aiMatrix4x4 å¹¶è°ƒç”¨ Assimp çš„ Decompose
+    // æˆ–è€…å¼•å…¥ math åº“ (å¦‚ glm / Unreal Math)
 
-    // ×¢Òâ£ºÕâÀïÎªÁËÑÏ½÷£¬Í¨³£½¨ÒéÖ±½ÓÔÚ Importer ½×¶ÎÀûÓÃ Assimp µÄ Decompose
-    // µ«Èç¹û±ØĞë´¦Àí FGASMatrix£¬ÄãĞèÒªÊµÏÖÀàËÆ glm::decompose »ò aiMatrix4x4::Decompose µÄÊıÑ§Âß¼­
+    /* ç¤ºä¾‹å®ç°é€»è¾‘ï¼š
+    aiMatrix4x4 Mat;
+    // ... å°† InMat æ‹·è´ç»™ Mat ...
 
-    // Î±´úÂëÕ¼Î»£º
-    // OutTrans = InMat.GetTranslation();
-    // OutScale = InMat.GetScale();
-    // OutRot = InMat.GetRotation();
+    aiVector3D Scaling, Position;
+    aiQuaternion Rotation;
+    Mat.Decompose(Scaling, Rotation, Position);
+
+    OutScale = ToVector3(Scaling);
+    OutRot   = ToQuaternion(Rotation);
+    OutTrans = ToVector3(Position);
+    */
 }

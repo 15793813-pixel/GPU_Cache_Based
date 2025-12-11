@@ -111,10 +111,19 @@
     <ClInclude Include="Core\Utils\GASDataConverter.h">
       <Filter>头文件\Core\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Utils\GASImporter.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Utils\GASDataConverter.cpp">
-      <Filter>头文件\Core\Utils</Filter>
+      <Filter>源文件\Core\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Utils\GASImporter.cpp">
+      <Filter>源文件\Core\Utils</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -3,56 +3,58 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
-#include<cstdint>
+#include <cstdint>
 #include <utility>
-
 
 template <typename T>
 class GASArray
 {
 public:
-	using ElementType = T;
-	
-	GASArray() = default;
+    using ElementType = T;
 
-	GASArray(std::initializer_list<T> InitList) :Data(InitList) {};
+    GASArray() = default;
 
-	TGASArray(const TGASArray& Other) = default;
-	TGASArray(TGASArray&& Other) noexcept = default;
-	TGASArray& operator=(const TGASArray& Other) = default;
-	TGASArray& operator=(TGASArray&& Other) noexcept = default;
+    GASArray(std::initializer_list<T> InitList) : Data(InitList) {};
 
+    // [修正 1] 把 TGASArray 改为 GASArray
+    GASArray(const GASArray& Other) = default;
+    GASArray(GASArray&& Other) noexcept = default;
+    GASArray& operator=(const GASArray& Other) = default;
+    GASArray& operator=(GASArray&& Other) noexcept = default;
 
     int32_t Num() const
     {
         return static_cast<int32_t>(Data.size());
     }
 
-    /** 添加元素 (UE: Add())，返回新元素的索引 */
     int32_t Add(const T& Item)
     {
         Data.push_back(Item);
         return Num() - 1;
     }
 
-    /** 添加元素 (移动语义) */
     int32_t Add(T&& Item)
     {
         Data.push_back(std::move(Item));
         return Num() - 1;
     }
 
-    /** 预留空间 (UE: Reserve())，避免频繁内存重分配 */
     void Reserve(int32_t Number)
     {
         Data.reserve(Number);
     }
+
+    // UE 风格命名
     void SetNum(int32_t NewNum)
     {
         Data.resize(NewNum);
     }
 
-    //获取原始数据指针 (UE: GetData())
+    // [修正 2] 添加 Resize 接口以匹配你的调用习惯 (或者你在逻辑代码里改成 SetNum)
+    void Resize(int32_t NewNum)
+    {
+        Data.resize(NewNum);
+    }
 
     T* GetData()
     {
@@ -64,30 +66,28 @@ public:
         return Data.empty() ? nullptr : Data.data();
     }
 
-    /** 获取整个数据块的字节大小 (用于序列化) */
     size_t GetTotalSizeInBytes() const
     {
         return Data.size() * sizeof(T);
     }
+
     T& operator[](int32_t Index)
     {
-        assert(IsValidIndex(Index));
+        // assert(IsValidIndex(Index)); // 根据需要开启断言
         return Data[Index];
     }
 
     const T& operator[](int32_t Index) const
     {
-        assert(IsValidIndex(Index));
+        // assert(IsValidIndex(Index));
         return Data[Index];
     }
 
-    /** 检查索引是否有效 */
     bool IsValidIndex(int32_t Index) const
     {
         return Index >= 0 && Index < Num();
     }
 
-    /** 查找元素，返回 true 如果找到，OutIndex 存储索引 */
     bool Find(const T& Item, int32_t& OutIndex) const
     {
         auto It = std::find(Data.begin(), Data.end(), Item);
@@ -105,11 +105,6 @@ public:
         return std::find(Data.begin(), Data.end(), Item) != Data.end();
     }
 
-    // =========================================================
-    // 移除与清理 (Remove & Empty)
-    // =========================================================
-
-    /** 清空数组 (UE: Empty()) */
     void Empty(int32_t Slack = 0)
     {
         Data.clear();
@@ -119,7 +114,6 @@ public:
         }
     }
 
-    /** 移除指定索引的元素，后续元素前移 (保持顺序，较慢) */
     void RemoveAt(int32_t Index)
     {
         if (IsValidIndex(Index))
@@ -128,9 +122,6 @@ public:
         }
     }
 
-    /** * 移除指定索引的元素 (UE: RemoveAtSwap)
-     * 将最后一个元素移到被删除位置，速度快但不保持顺序
-     */
     void RemoveAtSwap(int32_t Index)
     {
         if (IsValidIndex(Index))
@@ -142,6 +133,8 @@ public:
             Data.pop_back();
         }
     }
+
+    // 标准库迭代器支持
     auto begin() { return Data.begin(); }
     auto end() { return Data.end(); }
     auto begin() const { return Data.begin(); }

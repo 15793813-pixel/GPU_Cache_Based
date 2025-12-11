@@ -120,6 +120,34 @@ struct FGASBoneDefinition
     FGASTransform LocalBindPose;
 };
 
+inline void SetGASBoneName(FGASBoneDefinition& BoneDef, const char* InName)
+{
+    if (InName)
+    {
+        // 1. 使用标准库 strncpy 进行拷贝std::strncpy 会拷贝最多 N 个字符。如果源字符串长度小于 N，剩余部分会自动填充 \0。
+        // 如果源字符串长度大于等于 N，它不会自动添加 \0。
+        strncpy_s(BoneDef.Name, InName, GAS_MAX_BONE_NAME_LEN);
+        // 2. 【关键安全措施】强制将数组最后一位设为 \0
+        // 这样即使输入的 InName 超长，也能保证字符串被截断且是合法的 C-Style 字符串
+        BoneDef.Name[GAS_MAX_BONE_NAME_LEN - 1] = '\0';
+    }
+    else
+    {
+        // 如果传入空指针，将名字置为空字符串
+        BoneDef.Name[0] = '\0';
+    }
+}
+
+/**
+ * @brief 设置父骨骼索引
+ * @param BoneDef 目标骨骼定义结构体
+ * @param InIndex 父骨骼的索引
+ */
+inline void SetGASBoneParentIndex(FGASBoneDefinition& BoneDef, int32_t InIndex)
+{
+    BoneDef.ParentIndex = InIndex;
+}
+
 // ---------------------------------------------------------
 // 骨骼文件的二进制布局逻辑：
 // [FGASSkeletonHeader (64 + 16 bytes)]

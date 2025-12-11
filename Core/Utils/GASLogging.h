@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <string>
 #include <fstream>
@@ -9,7 +9,7 @@
 #include <mutex>
 #include <filesystem>
 
-// ÈÕÖ¾µÈ¼¶Ã¶¾Ù
+// æ—¥å¿—ç­‰çº§æšä¸¾
 enum class EGASLogLevel
 {
     Info,
@@ -18,8 +18,8 @@ enum class EGASLogLevel
 };
 
 /**
- * GASLogger (µ¥ÀıÄ£Ê½)
- * ¼òµ¥µÄÏß³Ì°²È«ÈÕÖ¾¼ÇÂ¼Æ÷£¬Ö§³ÖÊä³öµ½ÎÄ¼şºÍ¿ØÖÆÌ¨
+ * GASLogger (å•ä¾‹æ¨¡å¼)
+ * ç®€å•çš„çº¿ç¨‹å®‰å…¨æ—¥å¿—è®°å½•å™¨ï¼Œæ”¯æŒè¾“å‡ºåˆ°æ–‡ä»¶å’Œæ§åˆ¶å°
  */
 class GASLogger
 {
@@ -30,7 +30,7 @@ public:
         return Instance;
     }
 
-    /** ³õÊ¼»¯ÈÕÖ¾ÏµÍ³ (Í¨³£ÔÚ main º¯Êı»òÏµÍ³Æô¶¯Ê±µ÷ÓÃ) */
+    /** åˆå§‹åŒ–æ—¥å¿—ç³»ç»Ÿ (é€šå¸¸åœ¨ main å‡½æ•°æˆ–ç³»ç»Ÿå¯åŠ¨æ—¶è°ƒç”¨) */
     void Initialize(const std::string& LogFilePath = "GAS_Log.txt")
     {
         std::lock_guard<std::mutex> Lock(LogMutex);
@@ -46,7 +46,7 @@ public:
         }
     }
 
-    /** ¹Ø±ÕÈÕÖ¾ÎÄ¼ş */
+    /** å…³é—­æ—¥å¿—æ–‡ä»¶ */
     void Shutdown()
     {
         std::lock_guard<std::mutex> Lock(LogMutex);
@@ -56,22 +56,24 @@ public:
         }
     }
 
-    /** ºËĞÄ¼ÇÂ¼º¯Êı */
+    /** æ ¸å¿ƒè®°å½•å‡½æ•° */
     void Log(EGASLogLevel Level, const char* File, int Line, const char* Format, ...)
     {
-        // 1. »ñÈ¡Ê±¼ä´Á
+        // 1. è·å–æ—¶é—´æˆ³
         std::time_t Now = std::time(nullptr);
         char TimeStr[20];
-        std::strftime(TimeStr, sizeof(TimeStr), "%H:%M:%S", std::localtime(&Now));
+        struct tm TimeInfo;
+        localtime_s(&TimeInfo, &Now); // MSVC ç‰ˆæœ¬å‚æ•°é¡ºåºï¼š(&ç»“æœå®¹å™¨, &æºæ—¶é—´)
+        std::strftime(TimeStr, sizeof(TimeStr), "%H:%M:%S", &TimeInfo);
 
-        // 2. ¸ñÊ½»¯ÈÕÖ¾ÄÚÈİ
+        // 2. æ ¼å¼åŒ–æ—¥å¿—å†…å®¹
         char Buffer[1024];
         va_list Args;
         va_start(Args, Format);
         vsnprintf(Buffer, sizeof(Buffer), Format, Args);
         va_end(Args);
 
-        // 3. ×é×°ÍêÕûÏûÏ¢
+        // 3. ç»„è£…å®Œæ•´æ¶ˆæ¯
         std::stringstream FullMessage;
         FullMessage << "[" << TimeStr << "]";
 
@@ -84,21 +86,21 @@ public:
 
         FullMessage << Buffer;
 
-        // ¸½¼ÓÎÄ¼şºÍĞĞºÅ (½ö Warning ºÍ Error ÏÔÊ¾£¬±£³Ö Info ¼ò½à)
+        // é™„åŠ æ–‡ä»¶å’Œè¡Œå· (ä»… Warning å’Œ Error æ˜¾ç¤ºï¼Œä¿æŒ Info ç®€æ´)
         if (Level != EGASLogLevel::Info)
         {
-            // Ö»ÏÔÊ¾ÎÄ¼şÃû£¬²»ÏÔÊ¾ÍêÕûÂ·¾¶
+            // åªæ˜¾ç¤ºæ–‡ä»¶åï¼Œä¸æ˜¾ç¤ºå®Œæ•´è·¯å¾„
             std::string FileName = std::filesystem::path(File).filename().string();
             FullMessage << " (" << FileName << ":" << Line << ")";
         }
 
         std::string FinalStr = FullMessage.str();
 
-        // 4. Ïß³Ì°²È«Ğ´Èë
+        // 4. çº¿ç¨‹å®‰å…¨å†™å…¥
         {
             std::lock_guard<std::mutex> Lock(LogMutex);
 
-            // Êä³öµ½¿ØÖÆÌ¨ (Error ÓÃ cerr ºìÉ«¸ßÁÁÍ¨³£ĞèÒªÏµÍ³API£¬ÕâÀï¼òµ¥Çø·ÖÁ÷)
+            // è¾“å‡ºåˆ°æ§åˆ¶å° (Error ç”¨ cerr çº¢è‰²é«˜äº®é€šå¸¸éœ€è¦ç³»ç»ŸAPIï¼Œè¿™é‡Œç®€å•åŒºåˆ†æµ)
             if (Level == EGASLogLevel::Error)
             {
                 std::cerr << FinalStr << std::endl;
@@ -108,11 +110,11 @@ public:
                 std::cout << FinalStr << std::endl;
             }
 
-            // Êä³öµ½ÎÄ¼ş
+            // è¾“å‡ºåˆ°æ–‡ä»¶
             if (LogFile.is_open())
             {
                 LogFile << FinalStr << std::endl;
-                LogFile.flush(); // È·±£±ÀÀ£Ê±ÈÕÖ¾ÒÑĞ´Èë´ÅÅÌ
+                LogFile.flush(); // ç¡®ä¿å´©æºƒæ—¶æ—¥å¿—å·²å†™å…¥ç£ç›˜
             }
         }
     }
@@ -121,7 +123,7 @@ private:
     GASLogger() = default;
     ~GASLogger() { Shutdown(); }
 
-    // ½ûÖ¹¿½±´
+    // ç¦æ­¢æ‹·è´
     GASLogger(const GASLogger&) = delete;
     GASLogger& operator=(const GASLogger&) = delete;
 
@@ -130,27 +132,27 @@ private:
 };
 
 // =========================================================
-// ºê¶¨Òå (Macros) - ÔÚ´úÂëÖĞÊ¹ÓÃÕâĞ©£¬¶ø²»ÊÇÖ±½Óµ÷ÓÃÀà
+// å®å®šä¹‰ (Macros) - åœ¨ä»£ç ä¸­ä½¿ç”¨è¿™äº›ï¼Œè€Œä¸æ˜¯ç›´æ¥è°ƒç”¨ç±»
 // =========================================================
 
-// ÆÕÍ¨ĞÅÏ¢
+// æ™®é€šä¿¡æ¯
 #define GAS_LOG(Format, ...) \
     GASLogger::Get().Log(EGASLogLevel::Info, __FILE__, __LINE__, Format, ##__VA_ARGS__)
 
-// ¾¯¸æ
+// è­¦å‘Š
 #define GAS_LOG_WARN(Format, ...) \
     GASLogger::Get().Log(EGASLogLevel::Warning, __FILE__, __LINE__, Format, ##__VA_ARGS__)
 
-// ´íÎó
+// é”™è¯¯
 #define GAS_LOG_ERROR(Format, ...) \
     GASLogger::Get().Log(EGASLogLevel::Error, __FILE__, __LINE__, Format, ##__VA_ARGS__)
 
-// ¶ÏÑÔ¼ì²é (Èç¹ûÌõ¼şÎª¼Ù£¬´òÓ¡´íÎó²¢(¿ÉÑ¡)ÖĞ¶Ï³ÌĞò)
+// æ–­è¨€æ£€æŸ¥ (å¦‚æœæ¡ä»¶ä¸ºå‡ï¼Œæ‰“å°é”™è¯¯å¹¶(å¯é€‰)ä¸­æ–­ç¨‹åº)
 #define GAS_CHECK(Condition, Format, ...) \
     do { \
         if (!(Condition)) { \
             GAS_LOG_ERROR("Assertion Failed: %s. " Format, #Condition, ##__VA_ARGS__); \
-            /* Èç¹ûĞèÒªµ÷ÊÔÖĞ¶Ï£¬¿ÉÒÔ½â¿ªÏÂÃæÕâĞĞ */ \
+            /* å¦‚æœéœ€è¦è°ƒè¯•ä¸­æ–­ï¼Œå¯ä»¥è§£å¼€ä¸‹é¢è¿™è¡Œ */ \
             /* std::abort(); */ \
         } \
     } while(0)
