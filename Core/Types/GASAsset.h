@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "GASCoreTypes.h"
 #include "GASArray.h"
@@ -6,54 +6,38 @@
 #include <unordered_map>
 #include <memory>
 
-// =========================================================
-// 1. ×Ê²ú»ùÀà (Base Asset)
-// =========================================================
 
-/**
- * ÔËĞĞÊ±×Ê²ú»ùÀà
- * ËùÓĞ¾ßÌåµÄ×Ê²úÀàĞÍ£¨¹Ç÷À¡¢¶¯»­£©¶¼¼Ì³Ğ×ÔËü
- */
+
 class GASAsset
 {
 public:
     virtual ~GASAsset() = default;
 
-    /** »ñÈ¡×Ê²úµÄÈ«¾ÖÎ¨Ò»±êÊ¶ */
+    /** è·å–èµ„äº§çš„å…¨å±€å”¯ä¸€æ ‡è¯† */
     uint64_t GetGUID() const { return BaseHeader.AssetGUID; }
 
-    /** »ñÈ¡×Ê²úÀàĞÍ */
+    /** è·å–èµ„äº§ç±»å‹ */
     EGASAssetType GetType() const { return static_cast<EGASAssetType>(BaseHeader.AssetType); }
 
-    /** ¼ì²éÊÇ·ñÓĞĞ§ */
+    /** æ£€æŸ¥æ˜¯å¦æœ‰æ•ˆ */
     virtual bool IsValid() const { return BaseHeader.Magic == GAS_FILE_MAGIC; }
 
 public:
-    // »ù´¡Í·²¿ĞÅÏ¢ (ËùÓĞ×ÓÀà¶¼°üº¬)
+    // åŸºç¡€å¤´éƒ¨ä¿¡æ¯ (æ‰€æœ‰å­ç±»éƒ½åŒ…å«)
     FGASAssetHeader BaseHeader;
 
-    // µ÷ÊÔ/±à¼­Æ÷ÓÃ£º×Ê²úµÄÎÄ¼şÂ·¾¶»òÃû³Æ
+    // è°ƒè¯•/ç¼–è¾‘å™¨ç”¨ï¼šèµ„äº§çš„æ–‡ä»¶è·¯å¾„æˆ–åç§°
     std::string AssetName;
 };
 
-// =========================================================
-// 2. ¹Ç÷À×Ê²ú (Skeleton Asset)
-// =========================================================
-
-/**
- * ÔËĞĞÊ±¹Ç÷À¶ÔÏó
- * ³ÖÓĞÍêÕûµÄ¹Ç÷À²ã¼¶½á¹¹ºÍ²Î¿¼×ËÌ¬
- */
+// 2. éª¨éª¼èµ„äº§ (Skeleton Asset)
 class GASSkeleton : public GASAsset
 {
 public:
     GASSkeleton() = default;
 
-    /**
-     * ¹¹½¨¼ÓËÙ²éÕÒ±í
-     * ×¢Òâ£º´Ó¶ş½øÖÆ¼ÓÔØÍê Bones Êı×éºó£¬±ØĞëÊÖ¶¯µ÷ÓÃÒ»´ÎÕâ¸öº¯Êı
-     * ·ñÔò FindBoneIndex »áÊ§°Ü¡£
-     */
+
+     //æ„å»ºåŠ é€ŸæŸ¥æ‰¾è¡¨ ä»äºŒè¿›åˆ¶åŠ è½½å®Œ Bones æ•°ç»„åï¼Œå¿…é¡»æ‰‹åŠ¨è°ƒç”¨ä¸€æ¬¡è¿™ä¸ªå‡½æ•°
     void RebuildBoneMap()
     {
         BoneNameToIndexMap.clear();
@@ -63,14 +47,14 @@ public:
         }
     }
 
-    /** Í¨¹ıÃû³Æ²éÕÒ¹Ç÷ÀË÷Òı (O(1) ¸´ÔÓ¶È) */
+    //åç§°æŸ¥æ‰¾éª¨éª¼ç´¢å¼• (O(1) å¤æ‚åº¦)
     int32_t FindBoneIndex(const std::string& Name) const
     {
         auto It = BoneNameToIndexMap.find(Name);
         return (It != BoneNameToIndexMap.end()) ? It->second : -1;
     }
 
-    /** »ñÈ¡¸¸¹Ç÷ÀË÷Òı */
+    /** è·å–çˆ¶éª¨éª¼ç´¢å¼• */
     int32_t GetParentIndex(int32_t BoneIndex) const
     {
         if (Bones.IsValidIndex(BoneIndex))
@@ -80,52 +64,46 @@ public:
         return -1;
     }
 
-    /** »ñÈ¡¹Ç÷ÀÊıÁ¿ */
+    /** è·å–éª¨éª¼æ•°é‡ */
     int32_t GetNumBones() const { return Bones.Num(); }
 
-    /** »ñÈ¡ÌØ¶¨¹Ç÷ÀµÄÄæ°ó¶¨¾ØÕó (ÓÃÓÚÃÉÆ¤) */
+    /** è·å–ç‰¹å®šéª¨éª¼çš„é€†ç»‘å®šçŸ©é˜µ (ç”¨äºè’™çš®) */
     const FGASMatrix4x4& GetInverseBindMatrix(int32_t BoneIndex) const
     {
-        // ÕâÀïµÄ assert ÓÃÓÚ¿ª·¢ÆÚµ÷ÊÔ£¬È·±£Ã»ÓĞÔ½½ç·ÃÎÊ
+        // è¿™é‡Œçš„ assert ç”¨äºå¼€å‘æœŸè°ƒè¯•ï¼Œç¡®ä¿æ²¡æœ‰è¶Šç•Œè®¿é—®
         assert(Bones.IsValidIndex(BoneIndex));
         return Bones[BoneIndex].InverseBindMatrix;
     }
 
 public:
-    // ¾ßÌåµÄ¹Ç÷ÀÍ·²¿ĞÅÏ¢ (°üº¬ BoneCount µÈ)
+    // å…·ä½“çš„éª¨éª¼å¤´éƒ¨ä¿¡æ¯ (åŒ…å« BoneCount ç­‰)
     FGASSkeletonHeader SkeletonHeader;
 
-    // ¹Ç÷À¶¨ÒåÊı¾İÊı×é
+    // éª¨éª¼å®šä¹‰æ•°æ®æ•°ç»„
     GASArray<FGASBoneDefinition> Bones;
 
 private:
-    // ÔËĞĞÊ±¼ÓËÙ½á¹¹£º¹Ç÷ÀÃû³Æ -> Ë÷ÒıµÄÓ³Éä
-    // ²»ĞòÁĞ»¯µ½´ÅÅÌ£¬Load ºóÖØ½¨
+    // è¿è¡Œæ—¶åŠ é€Ÿç»“æ„ï¼šéª¨éª¼åç§° -> ç´¢å¼•çš„æ˜ å°„
+    // ä¸åºåˆ—åŒ–åˆ°ç£ç›˜ï¼ŒLoad åé‡å»º
     std::unordered_map<std::string, int32_t> BoneNameToIndexMap;
 };
 
-// =========================================================
-// 3. ¶¯»­×Ê²ú (Animation Asset)
-// =========================================================
 
-/**
- * ÔËĞĞÊ±¶¯»­¶ÔÏó
- * ³ÖÓĞËùÓĞÖ¡µÄ±ä»»Êı¾İ
- */
+// 3. åŠ¨ç”»èµ„äº§ (Animation Asset)
+
 class GASAnimation : public GASAsset
 {
 public:
     GASAnimation() = default;
 
     /**
-     * »ñÈ¡ÌØ¶¨¹Ç÷ÀÔÚÌØ¶¨Ö¡µÄ¾Ö²¿±ä»»
-     * @param FrameIndex Ö¡Ë÷Òı [0, FrameCount-1]
-     * @param TrackIndex ¹ìµÀË÷Òı (Í¨³£¶ÔÓ¦¹Ç÷ÀË÷Òı) [0, TrackCount-1]
+     * è·å–ç‰¹å®šéª¨éª¼åœ¨ç‰¹å®šå¸§çš„å±€éƒ¨å˜æ¢
+     * @param FrameIndex å¸§ç´¢å¼• [0, FrameCount-1]
+     * @param TrackIndex è½¨é“ç´¢å¼• (é€šå¸¸å¯¹åº”éª¨éª¼ç´¢å¼•) [0, TrackCount-1]
      */
     const FGASTransform* GetTransform(int32_t FrameIndex, int32_t TrackIndex) const
     {
-        // ¼ÆËã±âÆ½»¯Êı×éÖĞµÄÆ«ÒÆÁ¿
-        // Layout: [Frame0_AllBones] [Frame1_AllBones] ...
+        // è®¡ç®—æ‰å¹³åŒ–æ•°ç»„ä¸­çš„åç§»é‡
         int32_t TrackCount = AnimHeader.TrackCount;
         int32_t GlobalIndex = (FrameIndex * TrackCount) + TrackIndex;
 
@@ -136,20 +114,20 @@ public:
         return nullptr;
     }
 
-    /** »ñÈ¡×ÜÖ¡Êı */
+    /** è·å–æ€»å¸§æ•° */
     int32_t GetNumFrames() const { return AnimHeader.FrameCount; }
 
-    /** »ñÈ¡×ÜÊ±³¤ (Ãë) */
+    /** è·å–æ€»æ—¶é•¿ (ç§’) */
     float GetDuration() const { return AnimHeader.Duration; }
 
-    /** »ñÈ¡Ã¿ÃëÖ¡ÂÊ */
+    /** è·å–æ¯ç§’å¸§ç‡ */
     float GetFrameRate() const { return AnimHeader.FrameRate; }
 
 public:
-    // ¾ßÌåµÄ¶¯»­Í·²¿ĞÅÏ¢
+    // å…·ä½“çš„åŠ¨ç”»å¤´éƒ¨ä¿¡æ¯
     FGASAnimationHeader AnimHeader;
 
-    // ¾Ş´óµÄ±âÆ½»¯¶¯»­Êı¾İÊı×é
-    // ´óĞ¡ = FrameCount * TrackCount
+    // å·¨å¤§çš„æ‰å¹³åŒ–åŠ¨ç”»æ•°æ®æ•°ç»„
+    // å¤§å° = FrameCount * TrackCount
     GASArray<FGASAnimTrackData> Tracks;
 };

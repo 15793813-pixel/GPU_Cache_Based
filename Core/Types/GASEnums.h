@@ -2,14 +2,7 @@
 
 #include <cstdint>
 
-// =========================================================
 // 资产管理相关枚举
-// =========================================================
-
-/**
- * 资产类型
- * Updated: 改为 uint32_t 以匹配 FGASAssetHeader 的内存布局
- */
 enum class EGASAssetType : uint32_t
 {
     Unknown = 0,
@@ -47,6 +40,7 @@ enum class EGASAxis : uint8_t
 enum class EGASLoopMode : uint8_t
 {
     Once, Loop, PingPong, Clamp
+    //pingpong是反向播放回去再正向回来
 };
 
 enum class EGASTextureFormat : uint8_t

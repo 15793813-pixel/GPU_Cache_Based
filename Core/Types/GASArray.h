@@ -16,7 +16,6 @@ public:
 
     GASArray(std::initializer_list<T> InitList) : Data(InitList) {};
 
-    // [修正 1] 把 TGASArray 改为 GASArray
     GASArray(const GASArray& Other) = default;
     GASArray(GASArray&& Other) noexcept = default;
     GASArray& operator=(const GASArray& Other) = default;
@@ -44,13 +43,11 @@ public:
         Data.reserve(Number);
     }
 
-    // UE 风格命名
     void SetNum(int32_t NewNum)
     {
         Data.resize(NewNum);
     }
 
-    // [修正 2] 添加 Resize 接口以匹配你的调用习惯 (或者你在逻辑代码里改成 SetNum)
     void Resize(int32_t NewNum)
     {
         Data.resize(NewNum);
@@ -73,7 +70,6 @@ public:
 
     T& operator[](int32_t Index)
     {
-        // assert(IsValidIndex(Index)); // 根据需要开启断言
         return Data[Index];
     }
 

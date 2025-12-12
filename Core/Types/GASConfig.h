@@ -25,11 +25,7 @@ namespace GAS_CONFIG
     constexpr const char* SOURCE_ARCHIVE_PATH = "Assets/GAS_Cache/Sources/";
 }
 
-// =========================================================
 // 2. 核心常量与标识符 (Core Constants)
-// =========================================================
-
-
 constexpr float DEFAULT_ANIMATION_FPS = 30.0f;
 
 /**
