@@ -1,4 +1,4 @@
-/*
+﻿/*
 ---------------------------------------------------------------------------
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
@@ -643,7 +643,6 @@ struct aiMesh {
      * output meshes consist of one primitive type each.
      */
     unsigned int mPrimitiveTypes;
-
     /**
      * The number of vertices in this mesh.
      * This is also the size of all of the per-vertex data arrays.

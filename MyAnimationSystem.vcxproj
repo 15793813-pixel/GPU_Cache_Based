@@ -21,17 +21,26 @@
   <ItemGroup>
     <ClInclude Include="Core\Types\GASArray.h" />
     <ClInclude Include="Core\Types\GASAsset.h" />
+    <ClInclude Include="Core\Types\GASConfig.h" />
     <ClInclude Include="Core\Types\GASCoreTypes.h" />
     <ClInclude Include="Core\Types\GASEnums.h" />
+    <ClInclude Include="Core\Utils\GASAssetManager.h" />
+    <ClInclude Include="Core\Utils\GASBinarySerializer.h" />
     <ClInclude Include="Core\Utils\GASDataConverter.h" />
     <ClInclude Include="Core\Utils\GASFileHelper.h" />
     <ClInclude Include="Core\Utils\GASImporter.h" />
     <ClInclude Include="Core\Utils\GASLogging.h" />
     <ClInclude Include="Core\Utils\GASMath.h" />
+    <ClInclude Include="Core\Utils\GASMetadataStorage.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Core\Utils\GASAssetManager.cpp" />
+    <ClCompile Include="Core\Utils\GASBinarySerializer.cpp" />
     <ClCompile Include="Core\Utils\GASDataConverter.cpp" />
     <ClCompile Include="Core\Utils\GASImporter.cpp" />
+    <ClCompile Include="Core\Utils\GASMetadataStorage.cpp" />
+    <ClCompile Include="Dependency\include\sqlite\shell.c" />
+    <ClCompile Include="Dependency\include\sqlite\sqlite3.c" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
