@@ -75,7 +75,7 @@ public:
 
     const T& operator[](int32_t Index) const
     {
-        // assert(IsValidIndex(Index));
+        assert(IsValidIndex(Index));
         return Data[Index];
     }
 

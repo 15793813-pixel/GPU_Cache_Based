@@ -1,9 +1,7 @@
 ﻿#pragma once
 #include "GASImporter.h"
-#include "GASDataConverter.h" // 刚才写的工具类
-#include "GASLogging.h"           // 假设你有日志类
-
-// Assimp Headers
+#include "GASDataConverter.h"
+#include "GASLogging.h"          
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -11,9 +9,22 @@
 GASImporter::GASImporter() {}
 GASImporter::~GASImporter() {}
 
+
+struct BoneInfluence
+{
+    uint32_t Index;
+    float Weight;
+    // 排序操作符
+    bool operator<(const BoneInfluence& other) const {
+        return Weight > other.Weight; // 降序排序，权重大的在前
+    }
+};
+
+
 bool GASImporter::ImportFromFile(const std::string& FilePath,
     std::shared_ptr<GASSkeleton>& OutSkeleton,
-    std::vector<std::shared_ptr<GASAnimation>>& OutAnimations)
+    std::vector<std::shared_ptr<GASAnimation>>& OutAnimations,
+    std::vector<std::shared_ptr<GASMesh>>& OutMeshes)
 {
     Assimp::Importer Importer;
 
@@ -32,7 +43,7 @@ bool GASImporter::ImportFromFile(const std::string& FilePath,
 
     if (!Scene || Scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !Scene->mRootNode)
     {
-        // GAS_LOG_ERROR("Assimp Import Failed: %s", Importer.GetErrorString());
+        GAS_LOG_ERROR("Assimp Import Failed: %s", Importer.GetErrorString());
         return false;
     }
 
@@ -51,14 +62,35 @@ bool GASImporter::ImportFromFile(const std::string& FilePath,
     {
         ProcessAnimations(Scene, OutSkeleton.get(), OutAnimations);
     }
+    if (Scene->HasMeshes())
+    {
+        for (unsigned int i = 0; i < Scene->mNumMeshes; ++i)
+        {
+            const aiMesh* Mesh = Scene->mMeshes[i];
 
+            bool bHasSkinning = Mesh->HasBones() && Mesh->mNumBones > 0;
+
+            auto NewMesh = std::make_shared<GASMesh>();
+            NewMesh->AssetName = FilePath + "_" + Mesh->mName.C_Str();
+            NewMesh->SkeletonGUID = OutSkeleton->GetGUID();
+
+            // ProcessMesh (负责提取蒙皮权重和顶点)
+            if (ProcessMesh(Mesh, OutSkeleton.get(), NewMesh.get()))
+            {
+                OutMeshes.push_back(NewMesh);
+            }
+
+            if (bHasSkinning)
+            {
+                NewMesh->SetHasSkin(true);
+            }
+
+        }
+    }
     return true;
 }
 
-// =========================================================
 // 骨骼处理逻辑
-// =========================================================
-
 bool GASImporter::ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkeleton)
 {
     ValidBoneMap.clear();
@@ -99,61 +131,7 @@ bool GASImporter::ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkele
     return TargetSkeleton->Bones.Num() > 0;
 }
 
-void GASImporter::RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentBoneIndex, GASSkeleton* TargetSkeleton)
-{
-    std::string NodeName = Node->mName.C_Str();
-    std::string NormalizedName = GASDataConverter::NormalizeBoneName(NodeName);
-
-    int32_t CurrentBoneIndex = -1;
-
-    // 检查这个节点是不是我们在 Mesh 中发现的骨骼，或者它是否是骨架结构的一部分
-    // (有时候 Root 节点不是 Bone，但我们需要它作为层级根)
-    // 简单的判定逻辑：如果它在 ValidMap 里，或者是有效的父节点，或者是Root
-    bool bIsBone = (ValidBoneMap.find(NormalizedName) != ValidBoneMap.end());
-
-    // 如果是骨骼，或者是必须保留的层级节点，则加入 Skeleton
-    if (bIsBone || ParentBoneIndex != -1) // 只要父节点是骨骼，我们也默认保留子节点以维持层级
-    {
-        FGASBoneDefinition NewBone;
-        SetGASBoneName(NewBone, NodeName.c_str());
-        NewBone.ParentIndex = ParentBoneIndex;
-
-        // 设置逆绑定矩阵 (如果不是 Skinned Bone，比如末端节点，可能没有 IBM，设为 Identity)
-        if (InverseBindMatrixMap.count(NormalizedName))
-        {
-            NewBone.InverseBindMatrix = InverseBindMatrixMap[NormalizedName];
-        }
-        else
-        {
-            // 默认单位矩阵
-            NewBone.InverseBindMatrix = FGASMatrix4x4(); // Identity
-        }
-
-        // 记录索引
-        CurrentBoneIndex = TargetSkeleton->Bones.Num();
-
-        // 这里的 Add 假设你的 GASArray 有 Add 方法，或者用 std::vector 的 push_back
-        // TargetSkeleton->Bones.push_back(NewBone); 
-        // 适配 GASArray (假设你需要手动扩容或者有 Add)
-        // 这里演示逻辑：
-        // TargetSkeleton->Bones.Add(NewBone); 
-        // 为了演示完整性，我们假设 GASArray 是类似 std::vector 的封装：
-        // 实际上需要根据 GASArray 实现来写，这里伪代码：
-        TargetSkeleton->Bones.Resize(CurrentBoneIndex + 1);
-        TargetSkeleton->Bones[CurrentBoneIndex] = NewBone;
-    }
-
-    // 递归处理子节点
-    for (unsigned int i = 0; i < Node->mNumChildren; ++i)
-    {
-        RecursivelyProcessBoneNode(Node->mChildren[i], CurrentBoneIndex, TargetSkeleton);
-    }
-}
-
-// =========================================================
 // 动画处理逻辑 (Baking)
-// =========================================================
-
 bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Skeleton, std::vector<std::shared_ptr<GASAnimation>>& TargetAnimList)
 {
     for (unsigned int i = 0; i < Scene->mNumAnimations; ++i)
@@ -165,8 +143,8 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
         // Assimp 的 Duration 是 Ticks，需要除以 TicksPerSecond 得到秒
         double TicksPerSecond = (SrcAnim->mTicksPerSecond != 0) ? SrcAnim->mTicksPerSecond : 25.0;
         NewAnim->AnimHeader.Duration = (float)(SrcAnim->mDuration / TicksPerSecond);
-        NewAnim->AnimHeader.FrameRate = 30.0f; // 目标采样率：固定 30 FPS 或 60 FPS
-        NewAnim->AnimHeader.TrackCount = Skeleton->GetNumBones(); // Track 数量必须严格等于骨骼数量
+        NewAnim->AnimHeader.FrameRate = 30.0f;
+        NewAnim->AnimHeader.TrackCount = Skeleton->GetNumBones();
 
         // 计算总帧数
         int32_t FrameCount = (int32_t)(NewAnim->AnimHeader.Duration * NewAnim->AnimHeader.FrameRate) + 1;
@@ -186,7 +164,7 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
         }
 
         // 4. 重采样循环 (Bake)
-        double TimePerFrame = 1.0 / NewAnim->AnimHeader.FrameRate; // 每一帧的时间间隔 (秒)
+        double TimePerFrame = 1.0 / NewAnim->AnimHeader.FrameRate;
 
         for (int32_t Frame = 0; Frame < FrameCount; ++Frame)
         {
@@ -239,6 +217,189 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
     return true;
 }
 
+//Mesh逻辑处理
+bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, GASMesh* TargetMesh)
+{
+    if (!Mesh->HasPositions() || !Mesh->HasBones() || Mesh->mNumBones == 0)
+    {
+        // GAS_LOG_WARN("Mesh has no positions or bones, skipping skinning data extraction.");
+        return false;
+    }
+
+    // 1. 预处理：映射骨骼名称到本地索引 (确保与 GASSkeleton 索引一致)
+    // 这是关键步骤，Assimp 的 Bone Index 是 Mesh 局部的，我们需要将其映射到 GASSkeleton 的全局索引。
+    std::unordered_map<std::string, uint32_t> BoneNameMap;
+    for (unsigned int i = 0; i < Mesh->mNumBones; ++i)
+    {
+        std::string name = GASDataConverter::NormalizeBoneName(Mesh->mBones[i]->mName.C_Str());
+        int32_t GlobalIndex = Skeleton->FindBoneIndex(name);
+        if (GlobalIndex != -1)
+        {
+            BoneNameMap[name] = GlobalIndex;
+        }
+        else
+        {
+            // GAS_LOG_WARN("Mesh Bone '%s' not found in Skeleton asset. Data ignored.", name.c_str());
+        }
+    }
+
+    // 2. 遍历顶点，提取所有蒙皮影响
+    std::vector<std::vector<BoneInfluence>> AllInfluences(Mesh->mNumVertices);
+
+    for (unsigned int i = 0; i < Mesh->mNumBones; ++i)
+    {
+        const aiBone* Bone = Mesh->mBones[i];
+        std::string NormalizedName = GASDataConverter::NormalizeBoneName(Bone->mName.C_Str());
+
+        if (BoneNameMap.count(NormalizedName))
+        {
+            uint32_t GlobalBoneIndex = BoneNameMap[NormalizedName];
+
+            for (unsigned int j = 0; j < Bone->mNumWeights; ++j)
+            {
+                const aiVertexWeight& Weight = Bone->mWeights[j];
+                // 存储到对应顶点的影响列表中
+                AllInfluences[Weight.mVertexId].push_back({ GlobalBoneIndex, Weight.mWeight });
+            }
+        }
+    }
+
+    // 3. 遍历顶点，进行权重截断和归一化 (核心逻辑)
+    TargetMesh->Vertices.Resize(Mesh->mNumVertices);
+
+    for (unsigned int i = 0; i < Mesh->mNumVertices; ++i)
+    {
+        FGASSkinVertex& Vertex = TargetMesh->Vertices[i];
+        std::vector<BoneInfluence>& Influences = AllInfluences[i];
+
+        // 提取基础几何信息
+        Vertex.Position = GASDataConverter::ToVector3(Mesh->mVertices[i]);
+        if (Mesh->HasNormals()) {
+            Vertex.Normal = GASDataConverter::ToVector3(Mesh->mNormals[i]);
+        }
+        if (Mesh->HasTangentsAndBitangents()) {
+            Vertex.Tangent = GASDataConverter::ToVector3(Mesh->mTangents[i]);
+        }
+        if (Mesh->HasTextureCoords(0)) {
+            // 只取 UV 坐标的 x, y 分量
+            Vertex.UV.x = Mesh->mTextureCoords[0][i].x;
+            Vertex.UV.y = Mesh->mTextureCoords[0][i].y;
+            Vertex.UV.z = 0; // z分量不用
+        }
+
+        // 权重处理：截断
+        if (Influences.size() > MAX_BONE_INFLUENCES)
+        {
+            // 使用部分排序找到前 MAX_BONE_INFLUENCES 个最大的影响
+            std::partial_sort(
+                Influences.begin(),
+                Influences.begin() + MAX_BONE_INFLUENCES,
+                Influences.end()
+            );
+
+            // 截断多余的影响
+            Influences.resize(MAX_BONE_INFLUENCES);
+            // GAS_LOG_WARN("Vertex %d had %d influences, truncated to %d.", i, OriginalSize, MAX_BONE_INFLUENCES);
+        }
+
+        // 权重处理：归一化 (确保总和为 1.0)
+        float TotalWeight = 0.0f;
+        for (const auto& inf : Influences)
+        {
+            TotalWeight += inf.Weight;
+        }
+
+        if (TotalWeight > 0.0f)
+        {
+            float InvTotalWeight = 1.0f / TotalWeight;
+
+            for (size_t j = 0; j < Influences.size(); ++j)
+            {
+                // 存储归一化后的权重和索引
+                Vertex.BoneWeights.Weights[j] = Influences[j].Weight * InvTotalWeight;
+                Vertex.BoneIndices.Indices[j] = Influences[j].Index;
+            }
+        }
+        else
+        {
+            // GAS_LOG_WARN("Vertex %d has zero total weight after truncation/mapping.", i);
+            // 保持所有权重和索引为零/默认值
+        }
+    }
+
+    // 4. 提取索引数据 (如果 Mesh 使用索引)
+    if (Mesh->HasFaces())
+    {
+        // 索引数量 = Face数量 * 每个Face的索引数量 (Assimp 保证是三角形，即 3)
+        TargetMesh->Indices.Resize(Mesh->mNumFaces * 3);
+        uint32_t CurrentIndex = 0;
+        for (unsigned int i = 0; i < Mesh->mNumFaces; ++i)
+        {
+            const aiFace& Face = Mesh->mFaces[i];
+            if (Face.mNumIndices == 3)
+            {
+                TargetMesh->Indices[CurrentIndex++] = Face.mIndices[0];
+                TargetMesh->Indices[CurrentIndex++] = Face.mIndices[1];
+                TargetMesh->Indices[CurrentIndex++] = Face.mIndices[2];
+            }
+        }
+    }
+
+    return true;
+}
+
+
+void GASImporter::RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentBoneIndex, GASSkeleton* TargetSkeleton)
+{
+    std::string NodeName = Node->mName.C_Str();
+    std::string NormalizedName = GASDataConverter::NormalizeBoneName(NodeName);
+
+    int32_t CurrentBoneIndex = -1;
+
+    // 检查这个节点是不是我们在 Mesh 中发现的骨骼，或者它是否是骨架结构的一部分
+    // (有时候 Root 节点不是 Bone，但我们需要它作为层级根)
+    // 简单的判定逻辑：如果它在 ValidMap 里，或者是有效的父节点，或者是Root
+    bool bIsBone = (ValidBoneMap.find(NormalizedName) != ValidBoneMap.end());
+
+    // 如果是骨骼，或者是必须保留的层级节点，则加入 Skeleton
+    if (bIsBone || ParentBoneIndex != -1) // 只要父节点是骨骼，我们也默认保留子节点以维持层级
+    {
+        FGASBoneDefinition NewBone;
+        SetGASBoneName(NewBone, NodeName.c_str());
+        NewBone.ParentIndex = ParentBoneIndex;
+
+        // 设置逆绑定矩阵 (如果不是 Skinned Bone，比如末端节点，可能没有 IBM，设为 Identity)
+        if (InverseBindMatrixMap.count(NormalizedName))
+        {
+            NewBone.InverseBindMatrix = InverseBindMatrixMap[NormalizedName];
+        }
+        else
+        {
+            // 默认单位矩阵
+            NewBone.InverseBindMatrix = FGASMatrix4x4(); // Identity
+        }
+
+        // 记录索引
+        CurrentBoneIndex = TargetSkeleton->Bones.Num();
+
+        // 这里的 Add 假设你的 GASArray 有 Add 方法，或者用 std::vector 的 push_back
+        // TargetSkeleton->Bones.push_back(NewBone); 
+        // 适配 GASArray (假设你需要手动扩容或者有 Add)
+        // TargetSkeleton->Bones.Add(NewBone); 
+        // 为了演示完整性，我们假设 GASArray 是类似 std::vector 的封装：
+        // 实际上需要根据 GASArray 实现来写，这里伪代码：
+        TargetSkeleton->Bones.Resize(CurrentBoneIndex + 1);
+        TargetSkeleton->Bones[CurrentBoneIndex] = NewBone;
+    }
+
+    // 递归处理子节点
+    for (unsigned int i = 0; i < Node->mNumChildren; ++i)
+    {
+        RecursivelyProcessBoneNode(Node->mChildren[i], CurrentBoneIndex, TargetSkeleton);
+    }
+}
+
+
 // 简单的线性插值查找
 void GASImporter::EvaluateChannel(const aiNodeAnim* Channel, double Time, FGASTransform& OutTransform)
 {
@@ -286,3 +447,4 @@ void GASImporter::EvaluateChannel(const aiNodeAnim* Channel, double Time, FGASTr
     OutTransform.Rotation = GASDataConverter::ToQuaternion(ResultRot);
     OutTransform.Scale = GASDataConverter::ToVector3(ResultScale);
 }
+

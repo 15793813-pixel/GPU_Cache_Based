@@ -4,10 +4,7 @@
 #include <vector>
 #include <algorithm>
 
-// 引入你的核心类型定义
 #include "../Types/GASCoreTypes.h"
-
-// 引入 Assimp 数学库 (确保你的项目包含了 Assimp include 路径)
 #include <assimp/vector3.h>
 #include <assimp/quaternion.h>
 #include <assimp/matrix4x4.h>
@@ -20,29 +17,19 @@
 class GASDataConverter
 {
 public:
-    // =============================================================
     // 基础数据类型转换
-    // =============================================================
-
     /** 将 Assimp 向量转换为内部向量 */
     static FGASVector3 ToVector3(const aiVector3D& InVec);
-
     /** 将 Assimp 四元数转换为内部四元数 */
     static FGASQuaternion ToQuaternion(const aiQuaternion& InQuat);
-
     /** * 将 Assimp 矩阵转换为内部 4x4 矩阵
      * 注意：这里会处理 Row-Major (行优先) 到 Column-Major (列优先) 的转换（如果需要）
      */
     static FGASMatrix4x4 ToMatrix4x4(const aiMatrix4x4& InMat);
 
-    // =============================================================
     // 坐标系与空间标准化 (核心功能)
-    // =============================================================
 
-    /**
-     * 将位置从 Assimp (通常是右手系 Y-Up) 转换到 目标引擎坐标系 (如左手系)
-     * 常见操作：翻转 Z 轴 (z = -z)
-     */
+    //将位置从 Assimp (通常是右手系 Y-Up) 转换到 目标引擎坐标系 (如左手系)
     static FGASVector3 ConvertPositionToLeftHanded(const aiVector3D& InPos);
 
     /**
@@ -51,10 +38,7 @@ public:
      */
     static FGASQuaternion ConvertRotationToLeftHanded(const aiQuaternion& InRot);
 
-    // =============================================================
     // 命名与字符串处理
-    // =============================================================
-
     /**
      * 规范化骨骼名称
      * 1. 去除首尾空格

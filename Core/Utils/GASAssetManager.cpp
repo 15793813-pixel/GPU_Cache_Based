@@ -5,9 +5,7 @@
 
 namespace fs = std::filesystem;
 
-// =========================================================
 // Singleton 实现
-// =========================================================
 
 GASAssetManager::GASAssetManager() {}
 
@@ -32,25 +30,24 @@ bool GASAssetManager::Initialize()
     // 2. 初始化元数据数据库
     if (!MetadataStorage.Initialize(GAS_CONFIG::DATABASE_PATH))
     {
-        // GAS_LOG_FATAL("Failed to initialize Metadata Database at %s", GAS_CONFIG::DATABASE_PATH.c_str());
+        GAS_LOG_ERROR("Failed to initialize Metadata Database at %s", GAS_CONFIG::DATABASE_PATH);
         return false;
     }
 
-    // GAS_LOG_INFO("GAS Asset Manager Initialized successfully.");
+     GAS_LOG("GAS Asset Manager Initialized successfully.");
     return true;
 }
 
-// =========================================================
 // 资产导入与持久化
-// =========================================================
 
 uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
 {
     // 1. 导入/解析/烘焙 (耗时操作)
     std::shared_ptr<GASSkeleton> SkeletonAsset = nullptr;
     std::vector<std::shared_ptr<GASAnimation>> AnimationAssets;
+    std::vector<std::shared_ptr<GASMesh>> MeshAssets;
 
-    if (!Importer.ImportFromFile(SourceFilePath, SkeletonAsset, AnimationAssets))
+    if (!Importer.ImportFromFile(SourceFilePath, SkeletonAsset, AnimationAssets, MeshAssets))
     {
         // GAS_LOG_ERROR("Failed to import asset from %s", SourceFilePath.c_str());
         return 0;
@@ -96,9 +93,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
     return SkeletonGUID;
 }
 
-// =========================================================
 // 运行时资产加载与缓存
-// =========================================================
 
 std::shared_ptr<GASAsset> GASAssetManager::GetCachedAsset(uint64_t GUID) const
 {
@@ -145,6 +140,6 @@ std::shared_ptr<GASAsset> GASAssetManager::LoadAsset(uint64_t GUID)
         return LoadedAsset;
     }
 
-    // GAS_LOG_ERROR("Failed to load binary file: %s", Metadata.BinaryFilePath.c_str());
+    GAS_LOG_ERROR("Failed to load binary file: %s", Metadata.BinaryFilePath);
     return nullptr;
 }

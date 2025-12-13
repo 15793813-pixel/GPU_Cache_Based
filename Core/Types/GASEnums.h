@@ -9,7 +9,7 @@ enum class EGASAssetType : uint32_t
     Skeleton = 1,   // 骨骼
     Animation = 2,  // 动画
     Mesh = 3,       // 静态网格
-    SkinnedMesh = 4 // 蒙皮网格
+
 };
 
 /**

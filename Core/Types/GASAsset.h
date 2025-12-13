@@ -13,13 +13,13 @@ class GASAsset
 public:
     virtual ~GASAsset() = default;
 
-    /** 获取资产的全局唯一标识 */
+    //获取资产的全局唯一标识
     uint64_t GetGUID() const { return BaseHeader.AssetGUID; }
 
-    /** 获取资产类型 */
+    // 获取资产类型
     EGASAssetType GetType() const { return static_cast<EGASAssetType>(BaseHeader.AssetType); }
 
-    /** 检查是否有效 */
+    //检查是否有效 
     virtual bool IsValid() const { return BaseHeader.Magic == GAS_FILE_MAGIC; }
 
 public:
@@ -30,7 +30,7 @@ public:
     std::string AssetName;
 };
 
-// 2. 骨骼资产 (Skeleton Asset)
+// 2. 骨骼资产
 class GASSkeleton : public GASAsset
 {
 public:
@@ -47,14 +47,14 @@ public:
         }
     }
 
-    //名称查找骨骼索引 (O(1) 复杂度)
+    //名称查找骨骼索引 
     int32_t FindBoneIndex(const std::string& Name) const
     {
         auto It = BoneNameToIndexMap.find(Name);
         return (It != BoneNameToIndexMap.end()) ? It->second : -1;
     }
 
-    /** 获取父骨骼索引 */
+    //获取父骨骼索引
     int32_t GetParentIndex(int32_t BoneIndex) const
     {
         if (Bones.IsValidIndex(BoneIndex))
@@ -64,13 +64,12 @@ public:
         return -1;
     }
 
-    /** 获取骨骼数量 */
+    //获取骨骼数量 
     int32_t GetNumBones() const { return Bones.Num(); }
 
-    /** 获取特定骨骼的逆绑定矩阵 (用于蒙皮) */
+    //获取特定骨骼的逆绑定矩阵 (用于蒙皮)
     const FGASMatrix4x4& GetInverseBindMatrix(int32_t BoneIndex) const
     {
-        // 这里的 assert 用于开发期调试，确保没有越界访问
         assert(Bones.IsValidIndex(BoneIndex));
         return Bones[BoneIndex].InverseBindMatrix;
     }
@@ -89,18 +88,14 @@ private:
 };
 
 
-// 3. 动画资产 (Animation Asset)
-
+// 3. 动画资产 
 class GASAnimation : public GASAsset
 {
 public:
     GASAnimation() = default;
 
-    /**
-     * 获取特定骨骼在特定帧的局部变换
-     * @param FrameIndex 帧索引 [0, FrameCount-1]
-     * @param TrackIndex 轨道索引 (通常对应骨骼索引) [0, TrackCount-1]
-     */
+    
+    //获取特定骨骼在特定帧的局部变换
     const FGASTransform* GetTransform(int32_t FrameIndex, int32_t TrackIndex) const
     {
         // 计算扁平化数组中的偏移量
@@ -114,13 +109,13 @@ public:
         return nullptr;
     }
 
-    /** 获取总帧数 */
+    //获取总帧数
     int32_t GetNumFrames() const { return AnimHeader.FrameCount; }
 
-    /** 获取总时长 (秒) */
+    //获取总时长 (秒)
     float GetDuration() const { return AnimHeader.Duration; }
 
-    /** 获取每秒帧率 */
+    //获取每秒帧率 
     float GetFrameRate() const { return AnimHeader.FrameRate; }
 
 public:
@@ -130,4 +125,38 @@ public:
     // 巨大的扁平化动画数据数组
     // 大小 = FrameCount * TrackCount
     GASArray<FGASAnimTrackData> Tracks;
+};
+
+//4.网格资产
+class GASMesh : public GASAsset
+{
+public:
+    GASMesh()
+    {
+        BaseHeader.AssetType = EGASAssetType::Mesh;
+    }
+
+    /** 获取顶点数量 */
+    int32_t GetNumVertices() const { return Vertices.Num(); }
+
+    /** 获取索引数量 */
+    int32_t GetNumIndices() const { return Indices.Num(); }
+
+    //获取是否蒙皮
+    bool HasSkin()const { return MeshHasSkin; }
+
+    inline void SetHasSkin(bool Has) { MeshHasSkin = Has; }
+
+public:
+    // 关联的骨骼资产的 GUID 
+    uint64_t SkeletonGUID = 0;
+
+    // 顶点数据数组 
+    GASArray<FGASSkinVertex> Vertices;
+
+    // 索引数据
+    GASArray<uint32_t> Indices;
+
+    //是否是蒙皮mesh
+    bool MeshHasSkin = false;
 };

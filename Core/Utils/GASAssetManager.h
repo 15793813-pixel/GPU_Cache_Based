@@ -7,6 +7,7 @@
 #include "../Types/GASAsset.h"
 #include "GASMetadataStorage.h"
 #include "GASImporter.h"
+#include "GASLogging.h"
 #include "GASBinarySerializer.h"
 #include "../Types/GASConfig.h" // 包含配置路径
 
