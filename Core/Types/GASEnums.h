@@ -12,9 +12,8 @@ enum class EGASAssetType : uint32_t
 
 };
 
-/**
- * 导入结果/错误码
- */
+
+//导入结果/错误码
 enum class EGASImportResult : uint8_t
 {
     Success = 0,
@@ -26,10 +25,6 @@ enum class EGASImportResult : uint8_t
     BoneCountExceeded,
     UnknownError
 };
-
-// =========================================================
-// 数学与坐标系相关枚举
-// =========================================================
 
 enum class EGASAxis : uint8_t
 {

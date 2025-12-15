@@ -100,7 +100,6 @@ public:
         {
             std::lock_guard<std::mutex> Lock(LogMutex);
 
-            // 输出到控制台 (Error 用 cerr 红色高亮通常需要系统API，这里简单区分流)
             if (Level == EGASLogLevel::Error)
             {
                 std::cerr << FinalStr << std::endl;
@@ -131,9 +130,7 @@ private:
     std::mutex LogMutex;
 };
 
-// =========================================================
 // 宏定义 (Macros) - 在代码中使用这些，而不是直接调用类
-// =========================================================
 
 // 普通信息
 #define GAS_LOG(Format, ...) \

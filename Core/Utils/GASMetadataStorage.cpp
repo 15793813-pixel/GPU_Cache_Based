@@ -1,7 +1,7 @@
 ﻿#include "GASMetadataStorage.h"
 #include <sstream>
-#include <iostream> // 替代 GASLogging.h 进行简单输出
-// #include "GASLogging.h" // 如果你有自己的日志库，可以取消注释
+#include <iostream>
+#include "GASLogging.h"
 
 // 数据库表定义
 const char* SQL_CREATE_TABLE = R"(
@@ -12,7 +12,9 @@ const char* SQL_CREATE_TABLE = R"(
         BinaryFilePath TEXT NOT NULL,
         FrameCount INTEGER,
         Duration REAL,
-        BoneCount INTEGER
+        BoneCount INTEGER,
+        VerticeCount INTEGER,
+        MeshCount INTEGER
     );
 )";
 
@@ -22,15 +24,12 @@ GASMetadataStorage::~GASMetadataStorage()
 {
     if (DB)
     {
-        // 确保关闭数据库连接
         sqlite3_close(DB);
         DB = nullptr;
     }
 }
 
-/**
- * 初始化数据库，创建表结构
- */
+//初始化数据库，创建表结构
 bool GASMetadataStorage::Initialize(const std::string& DBPath)
 {
     // 打开或创建数据库文件
@@ -54,16 +53,14 @@ bool GASMetadataStorage::Initialize(const std::string& DBPath)
     return true;
 }
 
-/**
- * 导入成功后，向数据库注册资产的元数据
- */
+// 导入成功后，向数据库注册资产的元数据
 bool GASMetadataStorage::RegisterAsset(const FGASAssetMetadata& Metadata)
 {
     if (!DB) return false;
 
     // 尝试执行 INSERT OR REPLACE，避免重复 GUID 导致的错误
-    const char* sql = "INSERT OR REPLACE INTO Assets (GUID, Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?);";
+    const char* sql = "INSERT OR REPLACE INTO Assets (GUID, Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount, VerticeCount, MeshCount) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     sqlite3_stmt* stmt;
     int rc = sqlite3_prepare_v2(DB, sql, -1, &stmt, NULL);
@@ -77,6 +74,8 @@ bool GASMetadataStorage::RegisterAsset(const FGASAssetMetadata& Metadata)
     sqlite3_bind_int(stmt, 5, Metadata.FrameCount);
     sqlite3_bind_double(stmt, 6, Metadata.Duration);
     sqlite3_bind_int(stmt, 7, Metadata.BoneCount);
+    sqlite3_bind_int(stmt, 8, Metadata.VerticeCount);
+    sqlite3_bind_int(stmt, 9, Metadata.MeshCount);
 
     // 执行插入
     rc = sqlite3_step(stmt);
@@ -86,14 +85,12 @@ bool GASMetadataStorage::RegisterAsset(const FGASAssetMetadata& Metadata)
 }
 
 
-/**
- * 通过 GUID 查找元数据 (供运行时加载器查找文件路径)
- */
+// 通过 GUID 查找元数据 (供运行时加载器查找文件路径)
 bool GASMetadataStorage::QueryAssetByGUID(uint64_t GUID, FGASAssetMetadata& OutMetadata) const
 {
     if (!DB) return false;
 
-    const char* sql = "SELECT Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount FROM Assets WHERE GUID = ?;";
+    const char* sql = "SELECT Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount, VerticeCount, MeshCount FROM Assets WHERE GUID = ?;";
     sqlite3_stmt* stmt;
 
     // 准备 SQL 语句
@@ -116,6 +113,8 @@ bool GASMetadataStorage::QueryAssetByGUID(uint64_t GUID, FGASAssetMetadata& OutM
         OutMetadata.FrameCount = sqlite3_column_int(stmt, 3);
         OutMetadata.Duration = (float)sqlite3_column_double(stmt, 4);
         OutMetadata.BoneCount = sqlite3_column_int(stmt, 5);
+        OutMetadata.VerticeCount = sqlite3_column_int(stmt, 6);
+        OutMetadata.MeshCount = sqlite3_column_int(stmt, 7);
 
         sqlite3_finalize(stmt);
         return true;
@@ -126,15 +125,13 @@ bool GASMetadataStorage::QueryAssetByGUID(uint64_t GUID, FGASAssetMetadata& OutM
     return false; // 未找到或发生错误
 }
 
-/**
- * 查找所有资产元数据 (供编辑器资产列表显示)
- */
+// 查找所有资产元数据 (供编辑器资产列表显示)
 std::vector<FGASAssetMetadata> GASMetadataStorage::QueryAllAssets() const
 {
     std::vector<FGASAssetMetadata> Results;
     if (!DB) return Results;
 
-    const char* sql = "SELECT GUID, Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount FROM Assets ORDER BY Name ASC;";
+    const char* sql = "SELECT GUID, Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount, VerticeCount, MeshCount FROM Assets ORDER BY Name ASC;";
     sqlite3_stmt* stmt;
 
     int rc = sqlite3_prepare_v2(DB, sql, -1, &stmt, NULL);
@@ -151,6 +148,8 @@ std::vector<FGASAssetMetadata> GASMetadataStorage::QueryAllAssets() const
         Meta.FrameCount = sqlite3_column_int(stmt, 4);
         Meta.Duration = (float)sqlite3_column_double(stmt, 5);
         Meta.BoneCount = sqlite3_column_int(stmt, 6);
+        Meta.VerticeCount = sqlite3_column_int(stmt, 7);
+        Meta.MeshCount = sqlite3_column_int(stmt, 8);
 
         Results.push_back(Meta);
     }

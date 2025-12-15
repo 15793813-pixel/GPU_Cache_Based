@@ -90,7 +90,6 @@ namespace GASFileHelper
 
     
      // 获取不带路径的文件名
-     
     inline std::string GetFileName(const std::string& FilePath)
     {
 #if __cplusplus >= 201703L
@@ -105,9 +104,8 @@ namespace GASFileHelper
 #endif
     }
 
-    /**
-     * 路径拼接 helper
-     */
+    //路径拼接 helper
+     
     inline std::string CombinePath(const std::string& Folder, const std::string& Filename)
     {
         if (Folder.empty()) return Filename;

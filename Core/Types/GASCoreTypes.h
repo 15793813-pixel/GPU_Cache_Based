@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include <cstdint>
-#include <cstring> // for std::memset
-#include "GASEnums.h" // 引用枚举定义
+#include <cstring>
+#include "GASEnums.h" 
 
 
 // 用于在读取二进制文件时校验这是否是本系统的合法文件
@@ -14,6 +14,7 @@ static const uint32_t GAS_FILE_VERSION = 1;
 // 最大骨骼名称长度 
 static const int32_t GAS_MAX_BONE_NAME_LEN = 64;
 
+//最大影响骨骼数
 static const int32_t MAX_BONE_INFLUENCES = 8;
  
 struct FGASVector3
@@ -21,8 +22,8 @@ struct FGASVector3
     // 使用联合体让 X,Y,Z 和 x,y,z 共用内存
     union
     {
-        struct { float X, Y, Z; }; // 大写版本
-        struct { float x, y, z; }; // 小写版本
+        struct { float X, Y, Z; }; 
+        struct { float x, y, z; }; 
     };
 
     FGASVector3() : X(0.f), Y(0.f), Z(0.f) {}
@@ -33,8 +34,8 @@ struct FGASQuaternion
 {
     union
     {
-        struct { float X, Y, Z, W; }; // 大写
-        struct { float x, y, z, w; }; // 小写
+        struct { float X, Y, Z, W; }; 
+        struct { float x, y, z, w; }; 
     };
 
     FGASQuaternion() : X(0.f), Y(0.f), Z(0.f), W(1.f) {}
@@ -45,10 +46,8 @@ struct FGASMatrix4x4
 {
     union
     {
-        float M[4][4]; // 大写 M
-        float m[4][4]; // 小写 m
-        // 如果你需要一维数组访问，甚至可以加这个：
-        // float Data[16]; 
+        float M[4][4]; 
+        float m[4][4];
     };
 
     FGASMatrix4x4()
@@ -58,7 +57,6 @@ struct FGASMatrix4x4
 
     void SetIdentity()
     {
-        // 简单的单位矩阵初始化
         std::memset(M, 0, sizeof(M));
         M[0][0] = M[1][1] = M[2][2] = M[3][3] = 1.0f;
     }
@@ -72,10 +70,17 @@ struct FGASTransform
     FGASVector3 Scale;
 
     FGASTransform()
-        : Scale(1.f, 1.f, 1.f) // 缩放默认为 1
+        : Scale(1.f, 1.f, 1.f) 
     {
     }
 };
+
+struct FGASAABB
+{
+    FGASVector3 Min;
+    FGASVector3 Max;
+};
+
 struct FGASBoneIndices
 {
     uint32_t Indices[MAX_BONE_INFLUENCES] = { 0 };
@@ -87,7 +92,7 @@ struct FGASBoneWeights
     float Weights[MAX_BONE_INFLUENCES] = { 0.0f };
 };
 
-// 包含所有蒙皮信息的顶点结构 (Mesh Asset 的核心数据)
+// 包含所有蒙皮信息的顶点结构 
 struct FGASSkinVertex
 {
     float VertexID;
@@ -97,10 +102,9 @@ struct FGASSkinVertex
     FGASVector3 Bitangent;
     FGASVector3 UV;      
 
-    FGASBoneIndices BoneIndices; // 骨骼索引
-    FGASBoneWeights BoneWeights; // 骨骼权重
+    FGASBoneIndices BoneIndices; 
+    FGASBoneWeights BoneWeights; 
 };
-
 
 //通用资产头文件 所有 .gas 文件的前 48字节都是这个结构
 struct FGASAssetHeader
@@ -128,15 +132,16 @@ struct FGASAssetHeader
     uint32_t Reserved[4];   // [32-47]
 };
 
-//16字节
+//骨骼资产：48+48字节
 struct FGASSkeletonHeader : public FGASAssetHeader
 {
     // 骨骼数量
     uint32_t BoneCount;
-    uint32_t BonesReserved[3];
+    uint32_t BonesReserved[11];
 };
+// 骨骼文件的二进制布局逻辑：[FGASSkeletonHeader (96bytes)] +[FGASBoneDefinition * BoneCount]
 
-/** 单个骨骼的定义 */
+//128字节
 struct FGASBoneDefinition
 {
     char Name[GAS_MAX_BONE_NAME_LEN];
@@ -149,8 +154,41 @@ struct FGASBoneDefinition
     // 局部绑定姿态 (Local Bind Pose)
     // 作用：默认姿态，相对于父骨骼的相对变换
     FGASTransform LocalBindPose;
+    float reverse = 0.0;
 };
 
+// 动画资产header 48+24+24=96字节
+struct FGASAnimationHeader : public FGASAssetHeader
+{
+    // [关键] 引用所属骨骼的 GUID 运行时加载动画时，必须检查当前 Mesh 的 Skeleton GUID 是否匹配
+    uint64_t TargetSkeletonGUID;
+
+    // 动画信息
+    uint32_t FrameCount;    // 总帧数
+    uint32_t TrackCount;    // 轨道数 (通常等于骨骼数)
+    float FrameRate;        // 帧率
+    float Duration;         // 时长
+    uint32_t AniReserved[6];
+};
+
+//单帧数据 //40字节
+struct FGASAnimTrackData
+{
+    FGASTransform LocalTransform;
+};
+// 动画文件的二进制布局逻辑：[FGASAnimationHeader] [FGASAnimTrackData * (FrameCount * TrackCount)] 
+// 数据排列顺序：[Frame0_Bone0, Frame0_Bone1...], [Frame1_Bone0...]
+
+// Mesh 专属头部信息 96字节
+struct FGASMeshHeader : public FGASAssetHeader
+{
+    uint32_t NumVertices = 0;
+    uint32_t NumIndices = 0;
+    FGASAABB AABB;
+    uint32_t AniReserved[4];
+};
+
+//设置骨骼名称
 inline void SetGASBoneName(FGASBoneDefinition& BoneDef, const char* InName)
 {
     if (InName)
@@ -168,41 +206,7 @@ inline void SetGASBoneName(FGASBoneDefinition& BoneDef, const char* InName)
 }
 
 //设置父骨骼索引
-
 inline void SetGASBoneParentIndex(FGASBoneDefinition& BoneDef, int32_t InIndex)
 {
     BoneDef.ParentIndex = InIndex;
 }
-
-
-// 骨骼文件的二进制布局逻辑：
-// [FGASSkeletonHeader (64 + 16 bytes)]
-// [FGASBoneDefinition * BoneCount]
-
-
-// 动画资产 (Animation Asset)
-//48+24+24=96字节
-struct FGASAnimationHeader : public FGASAssetHeader
-{
-    // [关键] 引用所属骨骼的 GUID 运行时加载动画时，必须检查当前 Mesh 的 Skeleton GUID 是否匹配
-    uint64_t TargetSkeletonGUID;
-
-    // 动画信息
-    uint32_t FrameCount;    // 总帧数
-    uint32_t TrackCount;    // 轨道数 (通常等于骨骼数)
-    float FrameRate;        // 帧率
-    float Duration;         // 时长
-    uint32_t AniReserved[6];
-};
-
-//单帧数据
-struct FGASAnimTrackData
-{
-    FGASTransform LocalTransform;
-};
-
-
-// 动画文件的二进制布局逻辑：
-// [FGASAnimationHeader]
-// [FGASAnimTrackData * (FrameCount * TrackCount)] 
-// 数据排列顺序：[Frame0_Bone0, Frame0_Bone1...], [Frame1_Bone0...]

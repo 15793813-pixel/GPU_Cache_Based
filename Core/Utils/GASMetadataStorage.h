@@ -16,28 +16,27 @@ struct FGASAssetMetadata
     int32_t FrameCount = 0;
     float Duration = 0.0f;
     int32_t BoneCount = 0;
+    int32_t VerticeCount = 0;
+    int32_t MeshCount = 0;
 };
 
-/**
- * @class GASMetadataStorage
- * @brief 负责管理资产的元数据索引，基于 SQLite 实现。
- */
+//负责管理资产的元数据索引，基于 SQLite 实现。
 class GASMetadataStorage
 {
 public:
     GASMetadataStorage();
     ~GASMetadataStorage();
 
-    /** 初始化数据库，创建表结构 */
+    // 初始化数据库，创建表结构 
     bool Initialize(const std::string& DBPath);
 
-    /** 导入成功后，向数据库注册资产的元数据 */
+    //导入成功后，向数据库注册资产的元数据 
     bool RegisterAsset(const FGASAssetMetadata& Metadata);
 
-    /** 通过 GUID 查找元数据 (用于加载前的路径定位) */
+    //通过 GUID 查找元数据
     bool QueryAssetByGUID(uint64_t GUID, FGASAssetMetadata& OutMetadata) const;
 
-    /** 查找所有资产元数据 (用于编辑器列表显示) */
+    // 查找所有资产元数据
     std::vector<FGASAssetMetadata> QueryAllAssets() const;
 
 private:

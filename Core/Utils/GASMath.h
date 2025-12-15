@@ -5,11 +5,6 @@
 #include <algorithm>
 #include <limits>
 
-/**
- * GASMath
- * 纯静态数学函数库，用于操作 GASCoreTypes 中定义的 POD 数据结构。
- * 包含向量运算、四元数插值(Slerp)以及矩阵逆运算。
- */
 namespace GASMath
 {
     static const float PI = 3.1415926535897932f;

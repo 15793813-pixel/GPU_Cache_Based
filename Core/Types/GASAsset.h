@@ -30,6 +30,7 @@ public:
     std::string AssetName;
 };
 
+
 // 2. 骨骼资产
 class GASSkeleton : public GASAsset
 {
@@ -82,8 +83,7 @@ public:
     GASArray<FGASBoneDefinition> Bones;
 
 private:
-    // 运行时加速结构：骨骼名称 -> 索引的映射
-    // 不序列化到磁盘，Load 后重建
+    // 运行时加速结构：骨骼名称 -> 索引的映射 不序列化到磁盘，Load 后重建
     std::unordered_map<std::string, int32_t> BoneNameToIndexMap;
 };
 
@@ -122,8 +122,7 @@ public:
     // 具体的动画头部信息
     FGASAnimationHeader AnimHeader;
 
-    // 巨大的扁平化动画数据数组
-    // 大小 = FrameCount * TrackCount
+    // 巨大的扁平化动画数据数组 大小 = FrameCount * TrackCount
     GASArray<FGASAnimTrackData> Tracks;
 };
 
@@ -133,6 +132,7 @@ class GASMesh : public GASAsset
 public:
     GASMesh()
     {
+        // 默认为 Mesh 类型，具体是不是蒙皮由 MeshHasSkin 决定
         BaseHeader.AssetType = EGASAssetType::Mesh;
     }
 
@@ -142,21 +142,22 @@ public:
     /** 获取索引数量 */
     int32_t GetNumIndices() const { return Indices.Num(); }
 
-    //获取是否蒙皮
-    bool HasSkin()const { return MeshHasSkin; }
+    /** 获取包围盒 (用于剔除) */
+    const FGASAABB& GetAABB() const { return MeshHeader.AABB; }
 
     inline void SetHasSkin(bool Has) { MeshHasSkin = Has; }
-
 public:
-    // 关联的骨骼资产的 GUID 
+
+    FGASMeshHeader MeshHeader;
+
+    // 关联数据的 GUID 如果 MeshHasSkin=true，这里必须存储有效的 SkeletonGUID
     uint64_t SkeletonGUID = 0;
 
-    // 顶点数据数组 
+    // 注意：这里包含了 Position, Normal, UV, *BoneIndices*, *BoneWeights*
     GASArray<FGASSkinVertex> Vertices;
 
-    // 索引数据
+    //  索引数据 认为每三个点组成三角形，直接三个三个读取
     GASArray<uint32_t> Indices;
 
-    //是否是蒙皮mesh
     bool MeshHasSkin = false;
 };
