@@ -42,6 +42,7 @@ struct FGASQuaternion
     FGASQuaternion(float InX, float InY, float InZ, float InW) : X(InX), Y(InY), Z(InZ), W(InW) {}
 };
 
+//行优先
 struct FGASMatrix4x4
 {
     union

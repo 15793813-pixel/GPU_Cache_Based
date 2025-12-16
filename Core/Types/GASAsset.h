@@ -146,6 +146,7 @@ public:
     const FGASAABB& GetAABB() const { return MeshHeader.AABB; }
 
     inline void SetHasSkin(bool Has) { MeshHasSkin = Has; }
+    inline bool HasSkin() { return MeshHasSkin; }
 public:
 
     FGASMeshHeader MeshHeader;

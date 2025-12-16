@@ -1,17 +1,43 @@
 ﻿#include "GASBinarySerializer.h"
 #include <fstream>
 #include <iostream>
-#include "GASLogging.h"
+#include <vector>
 
-// =========================================================
-// 内部 I/O 辅助函数
-// =========================================================
+
+//辅助：写入字符串(长度 + 内容)
+bool WriteString(std::ofstream & Stream, const std::string & Str)
+{
+    uint32_t Len = static_cast<uint32_t>(Str.size());
+    if (!Stream.write(reinterpret_cast<const char*>(&Len), sizeof(uint32_t))) return false;
+    if (Len > 0)
+    {
+        if (!Stream.write(Str.data(), Len)) return false;
+    }
+    return true;
+}
+
+// 辅助：读取字符串 (长度 + 内容)
+bool ReadString(std::ifstream& Stream, std::string& OutStr)
+{
+    uint32_t Len = 0;
+    if (!Stream.read(reinterpret_cast<char*>(&Len), sizeof(uint32_t))) return false;
+    if (Len > 0)
+    {
+        OutStr.resize(Len);
+        if (!Stream.read(&OutStr[0], Len)) return false;
+    }
+    else
+    {
+        OutStr.clear();
+    }
+    return true;
+}
+
 
 bool GASBinarySerializer::WriteData(std::ofstream& Stream, const void* Data, size_t Size)
 {
     if (!Stream.write(reinterpret_cast<const char*>(Data), Size))
     {
-        // GAS_LOG_ERROR("Binary Write Failed.");
         return false;
     }
     return true;
@@ -21,190 +47,260 @@ bool GASBinarySerializer::ReadData(std::ifstream& Stream, void* Data, size_t Siz
 {
     if (!Stream.read(reinterpret_cast<char*>(Data), Size))
     {
-        // GAS_LOG_ERROR("Binary Read Failed. File corrupted or unexpected EOF.");
         return false;
     }
     return true;
 }
 
-// =========================================================
-// 序列化 (写) 实现
-// =========================================================
-
-bool GASBinarySerializer::SerializeSkeleton(std::ofstream& Stream, const GASSkeleton* Skeleton)
-{
-    // 1. 写入 Skeleton 头部 (包含 BoneCount)
-    if (!WriteData(Stream, &Skeleton->SkeletonHeader, sizeof(FGASSkeletonHeader))) return false;
-
-    // 2. 写入 Bones 数组
-    // 骨骼定义 FGASBoneDefinition 包含一个 std::string Name，必须手动序列化
-    for (int32_t i = 0; i < Skeleton->Bones.Num(); ++i)
-    {
-        const FGASBoneDefinition& Bone = Skeleton->Bones[i];
-
-        // 写入名称长度和名称数据 (非 POD 结构必须手动处理)
-        uint32_t NameLength = (uint32_t)strlen(Bone.Name);
-        if (!WriteData(Stream, &NameLength, sizeof(uint32_t))) return false;
-        if (!WriteData(Stream, Bone.Name, NameLength)) return false;
-
-        // 写入 BoneDefinition 的其余 POD 部分 (ParentIndex, IBM)
-        // 假设 FGASBoneDefinition 有一个用于序列化的 POD 结构体，这里为了简化，我们只写 ParentIndex 和 IBM
-        if (!WriteData(Stream, &Bone.ParentIndex, sizeof(int32_t))) return false;
-        if (!WriteData(Stream, &Bone.InverseBindMatrix, sizeof(FGASMatrix4x4))) return false;
-    }
-
-    // 注意：这里的序列化是非零拷贝的，因为包含 std::string。
-    // 对于真正的零拷贝，FGASBoneDefinition 的 Name 应该是一个固定长度的 char 数组，或者 Name 列表单独存放在文件末尾。
-
-    return true;
-}
-
-bool GASBinarySerializer::SerializeAnimation(std::ofstream& Stream, const GASAnimation* Animation)
-{
-    // 1. 写入 Animation 头部
-    if (!WriteData(Stream, &Animation->AnimHeader, sizeof(FGASAnimationHeader))) return false;
-
-    // 2. 写入 Tracks 数组
-    // Tracks 数组是核心数据，且是 POD 类型（包含 FGASTransform），可以零拷贝式写入
-    size_t TotalSize = Animation->Tracks.Num() * sizeof(FGASAnimTrackData);
-    if (TotalSize > 0)
-    {
-        if (!WriteData(Stream, Animation->Tracks.GetData(), TotalSize)) return false;
-    }
-
-    return true;
-}
-
-
+//保存资产
 bool GASBinarySerializer::SaveAssetToDisk(const GASAsset* Asset, const std::string& FilePath)
 {
-    std::ofstream FileStream(FilePath, std::ios::binary);
+    if (!Asset) return false;
+
+    std::ofstream FileStream(FilePath, std::ios::binary | std::ios::trunc);
     if (!FileStream.is_open())
     {
-        // GAS_LOG_ERROR("Failed to open file for writing: %s", FilePath.c_str());
+        std::cerr << "GAS Error: Failed to open file for writing: " << FilePath << std::endl;
         return false;
     }
 
-    // 1. 写入通用头部
-    if (!WriteData(FileStream, &Asset->BaseHeader, sizeof(FGASAssetHeader))) return false;
+    //写入通用头部
+    if (!WriteData(FileStream, &Asset->BaseHeader, sizeof(FGASAssetHeader)))
+    {
+        return false;
+    }
 
-    // 2. 写入特定数据
-    switch (Asset->GetType())
+    // 根据类型分发到具体的序列化函数
+    EGASAssetType Type = static_cast<EGASAssetType>(Asset->BaseHeader.AssetType);
+
+    switch (Type)
     {
     case EGASAssetType::Skeleton:
         return SerializeSkeleton(FileStream, static_cast<const GASSkeleton*>(Asset));
+
     case EGASAssetType::Animation:
         return SerializeAnimation(FileStream, static_cast<const GASAnimation*>(Asset));
+
+
+    case EGASAssetType::Mesh:
+        return SerializeMesh(FileStream, static_cast<const GASMesh*>(Asset));
+
     default:
-        // GAS_LOG_ERROR("Unknown Asset Type.");
+        std::cerr << "GAS Error: Unknown Asset Type during save." << std::endl;
         return false;
     }
 }
 
-// =========================================================
-// 反序列化 (读) 实现
-// =========================================================
 
-bool GASBinarySerializer::DeserializeSkeleton(std::ifstream& Stream, GASSkeleton* Skeleton)
-{
-    // 1. 读取 Skeleton 头部
-    if (!ReadData(Stream, &Skeleton->SkeletonHeader, sizeof(FGASSkeletonHeader))) return false;
-    int32_t BoneCount = Skeleton->SkeletonHeader.BoneCount;
-
-    // 2. 读取 Bones 数组
-    Skeleton->Bones.Resize(BoneCount);
-    for (int32_t i = 0; i < BoneCount; ++i)
-    {
-        FGASBoneDefinition& Bone = Skeleton->Bones[i];
-
-        // 读取名称长度和名称数据
-        uint32_t NameLength;
-        if (!ReadData(Stream, &NameLength, sizeof(uint32_t))) return false;
-
-        std::string NameBuffer(NameLength, '\0');
-        if (!ReadData(Stream, NameBuffer.data(), NameLength)) return false;
-        SetGASBoneName(Bone, NameBuffer.c_str());
-
-        // 读取 BoneDefinition 的其余 POD 部分
-        if (!ReadData(Stream, &Bone.ParentIndex, sizeof(int32_t))) return false;
-        if (!ReadData(Stream, &Bone.InverseBindMatrix, sizeof(FGASMatrix4x4))) return false;
-    }
-
-    // 3. 重建运行时加速结构
-    Skeleton->RebuildBoneMap();
-
-    return true;
-}
-
-bool GASBinarySerializer::DeserializeAnimation(std::ifstream& Stream, GASAnimation* Animation)
-{
-    // 1. 读取 Animation 头部
-    if (!ReadData(Stream, &Animation->AnimHeader, sizeof(FGASAnimationHeader))) return false;
-
-    // 2. 核心：计算 Tracks 数组大小
-    int32_t TotalTracks = Animation->AnimHeader.FrameCount * Animation->AnimHeader.TrackCount;
-    Animation->Tracks.Resize(TotalTracks);
-
-    // 3. 零拷贝读取 Tracks 数组 (因为 FGASAnimTrackData 是 POD 类型)
-    size_t TotalSize = TotalTracks * sizeof(FGASAnimTrackData);
-    if (TotalSize > 0)
-    {
-        // 直接将文件内容读取到连续内存块中
-        if (!ReadData(Stream, Animation->Tracks.GetData(), TotalSize)) return false;
-    }
-
-    return true;
-}
-
-
+// 主入口：加载资产
 std::shared_ptr<GASAsset> GASBinarySerializer::LoadAssetFromDisk(const std::string& FilePath)
 {
     std::ifstream FileStream(FilePath, std::ios::binary);
     if (!FileStream.is_open())
     {
-        // GAS_LOG_ERROR("Failed to open file for reading: %s", FilePath.c_str());
+        std::cerr << "GAS Error: Failed to open file for reading: " << FilePath << std::endl;
         return nullptr;
     }
 
-    // 1. 读取通用头部
-    FGASAssetHeader BaseHeader;
-    if (!ReadData(FileStream, &BaseHeader, sizeof(FGASAssetHeader))) return nullptr;
-
-    if (BaseHeader.Magic != GAS_FILE_MAGIC)
+    // 读取通用头部
+    FGASAssetHeader Header;
+    if (!ReadData(FileStream, &Header, sizeof(FGASAssetHeader)))
     {
-        // GAS_LOG_ERROR("File Magic Number Mismatch. Not a valid .gas file.");
         return nullptr;
     }
 
-    std::shared_ptr<GASAsset> LoadedAsset = nullptr;
+    //校验文件合法性
+    if (Header.Magic != GAS_FILE_MAGIC)
+    {
+        std::cerr << "GAS Error: Invalid Magic Number in file: " << FilePath << std::endl;
+        return nullptr;
+    }
 
-    // 2. 根据类型创建特定资产对象，并反序列化其数据
-    switch (static_cast<EGASAssetType>(BaseHeader.AssetType))
+    std::shared_ptr<GASAsset> ResultAsset = nullptr;
+    EGASAssetType Type = static_cast<EGASAssetType>(Header.AssetType);
+
+    //  根据类型创建对象并反序列化
+    switch (Type)
     {
     case EGASAssetType::Skeleton:
     {
         auto Skeleton = std::make_shared<GASSkeleton>();
-        Skeleton->BaseHeader = BaseHeader;
+        Skeleton->BaseHeader = Header;
         if (DeserializeSkeleton(FileStream, Skeleton.get()))
         {
-            LoadedAsset = Skeleton;
+            ResultAsset = Skeleton;
         }
         break;
     }
     case EGASAssetType::Animation:
     {
-        auto Animation = std::make_shared<GASAnimation>();
-        Animation->BaseHeader = BaseHeader;
-        if (DeserializeAnimation(FileStream, Animation.get()))
+        auto Anim = std::make_shared<GASAnimation>();
+        Anim->BaseHeader = Header;
+        if (DeserializeAnimation(FileStream, Anim.get()))
         {
-            LoadedAsset = Animation;
+            ResultAsset = Anim;
+        }
+        break;
+    }
+    case EGASAssetType::Mesh:
+    {
+        auto Mesh = std::make_shared<GASMesh>();
+        Mesh->BaseHeader = Header;
+        if (DeserializeMesh(FileStream, Mesh.get()))
+        {
+            ResultAsset = Mesh;
         }
         break;
     }
     default:
-        // GAS_LOG_ERROR("Unknown Asset Type in file header.");
+        std::cerr << "GAS Error: Unknown Asset Type in header." << std::endl;
         break;
     }
 
-    return LoadedAsset;
+    return ResultAsset;
+}
+
+
+// 骨骼 (Skeleton) 序列化实现
+bool GASBinarySerializer::SerializeSkeleton(std::ofstream& Stream, const GASSkeleton* Skeleton)
+{
+    //写 SkeletonHeader
+    if (!WriteData(Stream, &Skeleton->SkeletonHeader, sizeof(FGASSkeletonHeader))) return false;
+
+    //  写 Bones 数组
+    for (int32_t i = 0; i < Skeleton->Bones.Num(); ++i)
+    {
+        const FGASBoneDefinition& Bone = Skeleton->Bones[i];
+
+        if (!WriteString(Stream, Bone.Name)) return false; 
+        if (!WriteData(Stream, &Bone.ParentIndex, sizeof(int32_t))) return false;
+        if (!WriteData(Stream, &Bone.InverseBindMatrix, sizeof(FGASMatrix4x4))) return false; 
+    }
+    return true;
+}
+
+bool GASBinarySerializer::DeserializeSkeleton(std::ifstream& Stream, GASSkeleton* Skeleton)
+{
+    //  读 SkeletonHeader
+    if (!ReadData(Stream, &Skeleton->SkeletonHeader, sizeof(FGASSkeletonHeader))) return false;
+
+    //  准备内存
+    int32_t BoneCount = Skeleton->SkeletonHeader.BoneCount;
+    Skeleton->Bones.Resize(BoneCount);
+
+    //  读 Bones 数组
+    for (int32_t i = 0; i < BoneCount; ++i)
+    {
+        FGASBoneDefinition& Bone = Skeleton->Bones[i];
+
+        std::string TempName;
+        if (!ReadString(Stream, TempName)) return false;
+        size_t CopyLen = TempName.size();
+        if (CopyLen > sizeof(Bone.Name) - 1)
+        {
+            CopyLen = sizeof(Bone.Name) - 1; 
+        }
+        std::memcpy(Bone.Name, TempName.c_str(), CopyLen);
+        Bone.Name[CopyLen] = '\0'; 
+
+        if (!ReadData(Stream, &Bone.ParentIndex, sizeof(int32_t))) return false;
+        if (!ReadData(Stream, &Bone.InverseBindMatrix, sizeof(FGASMatrix4x4))) return false; 
+    }
+
+    // 重建加速查找表 
+    Skeleton->RebuildBoneMap();
+
+    return true;
+}
+
+//  动画 (Animation) 实现
+
+bool GASBinarySerializer::SerializeAnimation(std::ofstream& Stream, const GASAnimation* Animation)
+{
+    //  写 AnimHeader
+    if (!WriteData(Stream, &Animation->AnimHeader, sizeof(FGASAnimationHeader))) return false;
+
+    // 写 Tracks 数据
+    size_t DataSize = Animation->Tracks.Num() * sizeof(FGASAnimTrackData);
+    if (DataSize > 0)
+    {
+        if (!WriteData(Stream, Animation->Tracks.GetData(), DataSize)) return false;
+    }
+    return true;
+}
+
+bool GASBinarySerializer::DeserializeAnimation(std::ifstream& Stream, GASAnimation* Animation)
+{
+    //读 AnimHeader
+    if (!ReadData(Stream, &Animation->AnimHeader, sizeof(FGASAnimationHeader))) return false;
+
+    // 计算大小并 Resize
+    int32_t TotalElements = Animation->AnimHeader.FrameCount * Animation->AnimHeader.TrackCount;
+    Animation->Tracks.Resize(TotalElements);
+
+    // 读 Tracks 数据
+    size_t DataSize = TotalElements * sizeof(FGASAnimTrackData);
+    if (DataSize > 0)
+    {
+        if (!ReadData(Stream, Animation->Tracks.GetData(), DataSize)) return false;
+    }
+
+    return true;
+}
+
+
+// 网格 (Mesh) 实现
+
+bool GASBinarySerializer::SerializeMesh(std::ofstream& Stream, const GASMesh* Mesh)
+{
+    // MeshHeader
+    if (!WriteData(Stream, &Mesh->MeshHeader, sizeof(FGASMeshHeader))) return false;
+
+    // 蒙皮标记 和 SkeletonGUID
+    if (!WriteData(Stream, &Mesh->MeshHasSkin, sizeof(bool))) return false;
+    if (!WriteData(Stream, &Mesh->SkeletonGUID, sizeof(uint64_t))) return false;
+
+    // 顶点数据 
+    size_t VertexDataSize = Mesh->Vertices.Num() * sizeof(FGASSkinVertex);
+    if (VertexDataSize > 0)
+    {
+        if (!WriteData(Stream, Mesh->Vertices.GetData(), VertexDataSize)) return false;
+    }
+
+    //写 索引数据 
+    size_t IndexDataSize = Mesh->Indices.Num() * sizeof(uint32_t);
+    if (IndexDataSize > 0)
+    {
+        if (!WriteData(Stream, Mesh->Indices.GetData(), IndexDataSize)) return false;
+    }
+
+    return true;
+}
+
+bool GASBinarySerializer::DeserializeMesh(std::ifstream& Stream, GASMesh* Mesh)
+{
+    // 读 MeshHeader
+    if (!ReadData(Stream, &Mesh->MeshHeader, sizeof(FGASMeshHeader))) return false;
+
+    //  读MeshHasSkin和 SkeletonGUID
+    if (!ReadData(Stream, &Mesh->MeshHasSkin, sizeof(bool))) return false;
+    if (!ReadData(Stream, &Mesh->SkeletonGUID, sizeof(uint64_t))) return false;
+
+    // 读 顶点数据 根据 Header 里的数量分配内存
+    Mesh->Vertices.Resize(Mesh->MeshHeader.NumVertices);
+    size_t VertexDataSize = Mesh->Vertices.Num() * sizeof(FGASSkinVertex);
+    if (VertexDataSize > 0)
+    {
+        if (!ReadData(Stream, Mesh->Vertices.GetData(), VertexDataSize)) return false;
+    }
+
+    // 读索引数据
+    Mesh->Indices.Resize(Mesh->MeshHeader.NumIndices);
+    size_t IndexDataSize = Mesh->Indices.Num() * sizeof(uint32_t);
+    if (IndexDataSize > 0)
+    {
+        if (!ReadData(Stream, Mesh->Indices.GetData(), IndexDataSize)) return false;
+    }
+
+    return true;
 }

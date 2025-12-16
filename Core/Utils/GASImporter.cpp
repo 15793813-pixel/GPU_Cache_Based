@@ -14,9 +14,9 @@ struct BoneInfluence
 {
     uint32_t Index;
     float Weight;
-    // 排序操作符
+   // 降序排序，权重大的在前
     bool operator<(const BoneInfluence& other) const {
-        return Weight > other.Weight; // 降序排序，权重大的在前
+        return Weight > other.Weight; 
     }
 };
 
@@ -32,7 +32,7 @@ bool GASImporter::ImportFromFile(const std::string& FilePath,
     // 1. Triangulate: 保证所有网格是三角形
     // 2. LimitBoneWeights: 限制每个顶点最多4根骨骼 (这是GPU蒙皮的标准限制)
     // 3. ConvertToLeftHanded: 自动处理大部分坐标系转换 (Z反转, 面剔除顺序等)
-    //    配合我们自己的 GASDataConverter 做类型转换
+
     const unsigned int Flags = aiProcess_Triangulate |
         aiProcess_LimitBoneWeights |
         aiProcess_GenSmoothNormals |
@@ -51,17 +51,19 @@ bool GASImporter::ImportFromFile(const std::string& FilePath,
     OutSkeleton = std::make_shared<GASSkeleton>();
     OutSkeleton->AssetName = FilePath; // 简单起见用路径做名字
 
-    // 2. 处理骨骼 (这是后续动画的基础)
+    //处理骨骼 (这是后续动画的基础)
     if (!ProcessSkeleton(Scene, OutSkeleton.get()))
     {
         return false;
     }
 
-    // 3. 处理动画
+    // 处理动画
     if (Scene->mNumAnimations > 0)
     {
         ProcessAnimations(Scene, OutSkeleton.get(), OutAnimations);
     }
+
+    //处理mesh
     if (Scene->HasMeshes())
     {
         for (unsigned int i = 0; i < Scene->mNumMeshes; ++i)
@@ -96,8 +98,7 @@ bool GASImporter::ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkele
     ValidBoneMap.clear();
     InverseBindMatrixMap.clear();
 
-    // 步骤 A: 扫描所有 Mesh，收集真正有权重的骨骼信息
-    // Assimp 把 IBM (Inverse Bind Matrix) 存在 Mesh 里
+    //扫描所有 Mesh，收集真正有权重的骨骼信息 Assimp 把 IBM (Inverse Bind Matrix) 存在 Mesh 里
     if (Scene->HasMeshes())
     {
         for (unsigned int i = 0; i < Scene->mNumMeshes; ++i)
@@ -108,30 +109,27 @@ bool GASImporter::ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkele
                 const aiBone* Bone = Mesh->mBones[b];
                 std::string BoneName = Bone->mName.C_Str();
 
-                // 规范化名称 (使用 GASDataConverter)
+                // 规范化名称
                 std::string NormalizedName = GASDataConverter::NormalizeBoneName(BoneName);
-
                 // 标记为有效骨骼
                 ValidBoneMap[NormalizedName] = true;
 
-                // 存储逆绑定矩阵 (Assimp 也是 Row-Major，可以直接转)
                 InverseBindMatrixMap[NormalizedName] = GASDataConverter::ToMatrix4x4(Bone->mOffsetMatrix);
             }
         }
     }
 
-    // 步骤 B: 递归遍历 Node 树，构建线性骨骼数组
-    // 从 Root Node 开始
+    // 递归遍历 Node 树，构建线性骨骼数组  从 Root Node 开始
     RecursivelyProcessBoneNode(Scene->mRootNode, -1, TargetSkeleton);
 
-    // 步骤 C: 完成构建，更新 Header
+    // 完成构建，更新 Header
     TargetSkeleton->SkeletonHeader.BoneCount = TargetSkeleton->Bones.Num();
-    TargetSkeleton->RebuildBoneMap(); // 构建 Name->Index 查找表
+    TargetSkeleton->RebuildBoneMap(); 
 
     return TargetSkeleton->Bones.Num() > 0;
 }
 
-// 动画处理逻辑 (Baking)
+// 动画处理逻辑 
 bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Skeleton, std::vector<std::shared_ptr<GASAnimation>>& TargetAnimList)
 {
     for (unsigned int i = 0; i < Scene->mNumAnimations; ++i)
@@ -139,8 +137,7 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
         const aiAnimation* SrcAnim = Scene->mAnimations[i];
         auto NewAnim = std::make_shared<GASAnimation>();
 
-        // 1. 设置头部信息
-        // Assimp 的 Duration 是 Ticks，需要除以 TicksPerSecond 得到秒
+        //设置头部信息  Assimp 的 Duration 是 Ticks，需要除以 TicksPerSecond 得到秒
         double TicksPerSecond = (SrcAnim->mTicksPerSecond != 0) ? SrcAnim->mTicksPerSecond : 25.0;
         NewAnim->AnimHeader.Duration = (float)(SrcAnim->mDuration / TicksPerSecond);
         NewAnim->AnimHeader.FrameRate = 30.0f;
@@ -150,12 +147,11 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
         int32_t FrameCount = (int32_t)(NewAnim->AnimHeader.Duration * NewAnim->AnimHeader.FrameRate) + 1;
         NewAnim->AnimHeader.FrameCount = FrameCount;
 
-        // 2. 准备数据容器
-        // 大小 = 帧数 * 骨骼数
+        // 准备数据容器 大小 = 帧数 * 骨骼数
         int32_t TotalDataSize = FrameCount * NewAnim->AnimHeader.TrackCount;
         NewAnim->Tracks.Resize(TotalDataSize);
 
-        // 3. 建立 BoneName -> aiNodeAnim* 的映射，加速查找
+        // 建立 BoneName -> aiNodeAnim* 的映射，加速查找
         std::map<std::string, const aiNodeAnim*> NodeAnimMap;
         for (unsigned int ch = 0; ch < SrcAnim->mNumChannels; ++ch)
         {
@@ -163,7 +159,7 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
             NodeAnimMap[NodeName] = SrcAnim->mChannels[ch];
         }
 
-        // 4. 重采样循环 (Bake)
+        //重采样循环 
         double TimePerFrame = 1.0 / NewAnim->AnimHeader.FrameRate;
 
         for (int32_t Frame = 0; Frame < FrameCount; ++Frame)
@@ -195,17 +191,13 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
                 }
                 else
                 {
-                    // 无动画：使用默认姿态 (Identity 或 BindPose)
-                    // 这里的 LocalTransform 应该是相对于父骨骼的
-                    // 如果 Assimp 没有动画数据，通常意味着保持 BindPose
-                    // 简化处理：设为 Identity (或者你需要从 aiNode 读取 LocalTransform 作为默认值)
+                    // 无动画：使用默认姿态 
                     TrackData.LocalTransform.Scale = FGASVector3(1, 1, 1);
                     TrackData.LocalTransform.Translation = FGASVector3(0, 0, 0);
                     TrackData.LocalTransform.Rotation = FGASQuaternion(0, 0, 0, 1);
                 }
 
-                // 存入扁平化数组
-                // Index = Frame * NumBones + BoneIndex
+                // 存入扁平化数组 Index = Frame * NumBones + BoneIndex
                 int32_t GlobalIndex = Frame * NewAnim->AnimHeader.TrackCount + BoneIdx;
                 NewAnim->Tracks[GlobalIndex] = TrackData;
             }
@@ -222,12 +214,11 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
 {
     if (!Mesh->HasPositions() || !Mesh->HasBones() || Mesh->mNumBones == 0)
     {
-        // GAS_LOG_WARN("Mesh has no positions or bones, skipping skinning data extraction.");
+        GAS_LOG_WARN("Mesh has no positions or bones, skipping skinning data extraction.");
         return false;
     }
 
-    // 1. 预处理：映射骨骼名称到本地索引 (确保与 GASSkeleton 索引一致)
-    // 这是关键步骤，Assimp 的 Bone Index 是 Mesh 局部的，我们需要将其映射到 GASSkeleton 的全局索引。
+    //预处理：映射骨骼名称到本地索引  Assimp 的 Bone Index 是 Mesh 局部的，我们需要将其映射到 GASSkeleton 的全局索引。
     std::unordered_map<std::string, uint32_t> BoneNameMap;
     for (unsigned int i = 0; i < Mesh->mNumBones; ++i)
     {
@@ -239,11 +230,11 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
         }
         else
         {
-            // GAS_LOG_WARN("Mesh Bone '%s' not found in Skeleton asset. Data ignored.", name.c_str());
+             GAS_LOG_WARN("Mesh Bone '%s' not found in Skeleton asset. Data ignored.", name.c_str());
         }
     }
 
-    // 2. 遍历顶点，提取所有蒙皮影响
+    //遍历顶点，提取所有蒙皮影响
     std::vector<std::vector<BoneInfluence>> AllInfluences(Mesh->mNumVertices);
 
     for (unsigned int i = 0; i < Mesh->mNumBones; ++i)
@@ -258,13 +249,12 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
             for (unsigned int j = 0; j < Bone->mNumWeights; ++j)
             {
                 const aiVertexWeight& Weight = Bone->mWeights[j];
-                // 存储到对应顶点的影响列表中
                 AllInfluences[Weight.mVertexId].push_back({ GlobalBoneIndex, Weight.mWeight });
             }
         }
     }
 
-    // 3. 遍历顶点，进行权重截断和归一化 (核心逻辑)
+    // 遍历顶点，进行权重截断和归一化 
     TargetMesh->Vertices.Resize(Mesh->mNumVertices);
 
     for (unsigned int i = 0; i < Mesh->mNumVertices; ++i)
@@ -284,7 +274,7 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
             // 只取 UV 坐标的 x, y 分量
             Vertex.UV.x = Mesh->mTextureCoords[0][i].x;
             Vertex.UV.y = Mesh->mTextureCoords[0][i].y;
-            Vertex.UV.z = 0; // z分量不用
+            Vertex.UV.z = 0; 
         }
 
         // 权重处理：截断
@@ -296,13 +286,11 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
                 Influences.begin() + MAX_BONE_INFLUENCES,
                 Influences.end()
             );
-
-            // 截断多余的影响
             Influences.resize(MAX_BONE_INFLUENCES);
             // GAS_LOG_WARN("Vertex %d had %d influences, truncated to %d.", i, OriginalSize, MAX_BONE_INFLUENCES);
         }
 
-        // 权重处理：归一化 (确保总和为 1.0)
+        // 权重处理：归一化
         float TotalWeight = 0.0f;
         for (const auto& inf : Influences)
         {
@@ -327,7 +315,7 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
         }
     }
 
-    // 4. 提取索引数据 (如果 Mesh 使用索引)
+    //提取索引数据 
     if (Mesh->HasFaces())
     {
         // 索引数量 = Face数量 * 每个Face的索引数量 (Assimp 保证是三角形，即 3)
@@ -344,7 +332,6 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
             }
         }
     }
-
     return true;
 }
 
@@ -356,8 +343,7 @@ void GASImporter::RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentB
 
     int32_t CurrentBoneIndex = -1;
 
-    // 检查这个节点是不是我们在 Mesh 中发现的骨骼，或者它是否是骨架结构的一部分
-    // (有时候 Root 节点不是 Bone，但我们需要它作为层级根)
+    // 检查这个节点是不是我们在 Mesh 中发现的骨骼，或者它是否是骨架结构的一部分(有时候 Root 节点不是 Bone，但我们需要它作为层级根)
     // 简单的判定逻辑：如果它在 ValidMap 里，或者是有效的父节点，或者是Root
     bool bIsBone = (ValidBoneMap.find(NormalizedName) != ValidBoneMap.end());
 
@@ -382,14 +368,9 @@ void GASImporter::RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentB
         // 记录索引
         CurrentBoneIndex = TargetSkeleton->Bones.Num();
 
-        // 这里的 Add 假设你的 GASArray 有 Add 方法，或者用 std::vector 的 push_back
-        // TargetSkeleton->Bones.push_back(NewBone); 
-        // 适配 GASArray (假设你需要手动扩容或者有 Add)
-        // TargetSkeleton->Bones.Add(NewBone); 
-        // 为了演示完整性，我们假设 GASArray 是类似 std::vector 的封装：
-        // 实际上需要根据 GASArray 实现来写，这里伪代码：
+        //添加骨骼 
         TargetSkeleton->Bones.Resize(CurrentBoneIndex + 1);
-        TargetSkeleton->Bones[CurrentBoneIndex] = NewBone;
+        TargetSkeleton->Bones.Add(NewBone);
     }
 
     // 递归处理子节点
@@ -403,46 +384,140 @@ void GASImporter::RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentB
 // 简单的线性插值查找
 void GASImporter::EvaluateChannel(const aiNodeAnim* Channel, double Time, FGASTransform& OutTransform)
 {
-    // Assimp 的 Key 可能很少，我们需要找到 Time 前后的两个 Key 进行插值
+    // 辅助 Lambda: 查找当前时间对应的关键帧索引
 
-    // 1. 位置 (Position)
+    auto FindKeyIndex = [&](unsigned int NumKeys, const auto* Keys) -> unsigned int
+        {
+
+            if (NumKeys < 2) return 0;
+            for (unsigned int i = 0; i < NumKeys - 1; i++)
+            {
+                if (Time < Keys[i + 1].mTime)
+                {
+                    return i;
+                }
+            }
+
+            return NumKeys - 1; 
+        };
+
+    //位置 (Position) - 线性插值 (Lerp)
+
     aiVector3D ResultPos;
+
     if (Channel->mNumPositionKeys > 0)
     {
-        // 简单查找：这里应该用二分查找优化，为了代码简洁先略过
-        // 假设 Assimp 提供了 helper 或者我们手写
-        // 这里为了演示，假设只有一个 key
-        // 实际上需要实现 FindPositionKey(Time) -> index
-        // 然后 Lerp(Keys[index], Keys[index+1], factor)
-
-        // 占位逻辑：取第一帧 (实际开发需要完善插值)
-        ResultPos = Channel->mPositionKeys[0].mValue;
-
-        // 正确的逻辑结构提示：
-        /*
-        unsigned int Index = 0;
-        for (; Index < Channel->mNumPositionKeys - 1; Index++) {
-            if (Time < Channel->mPositionKeys[Index + 1].mTime) break;
+        if (Channel->mNumPositionKeys == 1)
+        {
+            ResultPos = Channel->mPositionKeys[0].mValue;
         }
-        // 计算 Factor 并 Lerp...
-        */
+        else
+        {
+            unsigned int Index = FindKeyIndex(Channel->mNumPositionKeys, Channel->mPositionKeys);
+            unsigned int NextIndex = (Index + 1 >= Channel->mNumPositionKeys) ? Index : Index + 1;
+
+            if (Index == NextIndex)
+            {
+                ResultPos = Channel->mPositionKeys[Index].mValue;
+            }
+            else
+            {
+                const aiVectorKey& StartKey = Channel->mPositionKeys[Index];
+                const aiVectorKey& EndKey = Channel->mPositionKeys[NextIndex];
+
+                // 计算插值因子 Alpha [0, 1]
+                double DeltaTime = EndKey.mTime - StartKey.mTime;
+                float Factor = (float)((Time - StartKey.mTime) / DeltaTime);
+
+                // 钳制 Factor 防止浮点误差
+                if (Factor < 0.0f) Factor = 0.0f;
+                if (Factor > 1.0f) Factor = 1.0f;
+
+                // 线性插值: P = P0 + (P1 - P0) * t
+                const aiVector3D& Start = StartKey.mValue;
+                const aiVector3D& End = EndKey.mValue;
+                ResultPos = Start + (End - Start) * Factor;
+            }
+        }
     }
 
-    // 2. 旋转 (Rotation)
+    //  2. 旋转 (Rotation) - 球面线性插值 (Slerp)
+  
     aiQuaternion ResultRot;
+
     if (Channel->mNumRotationKeys > 0)
     {
-        ResultRot = Channel->mRotationKeys[0].mValue; // 占位
+        if (Channel->mNumRotationKeys == 1)
+        {
+            ResultRot = Channel->mRotationKeys[0].mValue;
+        }
+        else
+        {
+            unsigned int Index = FindKeyIndex(Channel->mNumRotationKeys, Channel->mRotationKeys);
+            unsigned int NextIndex = (Index + 1 >= Channel->mNumRotationKeys) ? Index : Index + 1;
+
+            if (Index == NextIndex)
+            {
+                ResultRot = Channel->mRotationKeys[Index].mValue;
+            }
+            else
+            {
+                const aiQuatKey& StartKey = Channel->mRotationKeys[Index];
+                const aiQuatKey& EndKey = Channel->mRotationKeys[NextIndex];
+
+                double DeltaTime = EndKey.mTime - StartKey.mTime;
+                float Factor = (float)((Time - StartKey.mTime) / DeltaTime);
+
+                if (Factor < 0.0f) Factor = 0.0f;
+                if (Factor > 1.0f) Factor = 1.0f;
+
+                // 使用 Assimp 内置的 Slerp
+                const aiQuaternion& Start = StartKey.mValue;
+                const aiQuaternion& End = EndKey.mValue;
+                aiQuaternion::Interpolate(ResultRot, Start, End, Factor);
+                ResultRot.Normalize(); // 这是一个好习惯，防止插值后失去单位化
+            }
+        }
     }
 
-    // 3. 缩放 (Scale)
-    aiVector3D ResultScale(1, 1, 1);
+    //3. 缩放 (Scale) - 线性插值 (Lerp)
+    aiVector3D ResultScale(1.0f, 1.0f, 1.0f);
+
     if (Channel->mNumScalingKeys > 0)
     {
-        ResultScale = Channel->mScalingKeys[0].mValue; // 占位
+        if (Channel->mNumScalingKeys == 1)
+        {
+            ResultScale = Channel->mScalingKeys[0].mValue;
+        }
+        else
+        {
+            unsigned int Index = FindKeyIndex(Channel->mNumScalingKeys, Channel->mScalingKeys);
+            unsigned int NextIndex = (Index + 1 >= Channel->mNumScalingKeys) ? Index : Index + 1;
+
+            if (Index == NextIndex)
+            {
+                ResultScale = Channel->mScalingKeys[Index].mValue;
+            }
+            else
+            {
+                const aiVectorKey& StartKey = Channel->mScalingKeys[Index];
+                const aiVectorKey& EndKey = Channel->mScalingKeys[NextIndex];
+
+                double DeltaTime = EndKey.mTime - StartKey.mTime;
+                float Factor = (float)((Time - StartKey.mTime) / DeltaTime);
+
+                if (Factor < 0.0f) Factor = 0.0f;
+                if (Factor > 1.0f) Factor = 1.0f;
+
+                const aiVector3D& Start = StartKey.mValue;
+                const aiVector3D& End = EndKey.mValue;
+                ResultScale = Start + (End - Start) * Factor;
+            }
+        }
     }
 
-    // 4. 转换到 GAS 类型
+    // 数据转换 (Assimp -> GAS)
+
     OutTransform.Translation = GASDataConverter::ToVector3(ResultPos);
     OutTransform.Rotation = GASDataConverter::ToQuaternion(ResultRot);
     OutTransform.Scale = GASDataConverter::ToVector3(ResultScale);

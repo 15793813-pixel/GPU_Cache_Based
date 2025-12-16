@@ -14,29 +14,19 @@ struct aiAnimation;
 struct aiNodeAnim;
 struct aiMesh;
 
-/**
- * @class GASImporter
- * @brief 负责加载外部模型文件 (FBX/GLTF)，并生成 GASSkeleton 和 GASAnimation 对象
- */
+// 负责加载外部模型文件 (FBX/GLTF)，并生成 GASSkeleton 和 GASAnimation 对象
+
 class GASImporter
 {
 public:
     GASImporter();
     ~GASImporter();
 
-    /**
-     * 从文件加载并处理资产
-     * @param FilePath 文件路径
-     * @param OutSkeleton [输出] 解析出的骨骼数据
-     * @param OutAnimations [输出] 解析出的所有动画剪辑
-     * @return 是否成功
-     */
+    //从文件加载并处理资产
     bool ImportFromFile(const std::string& FilePath, std::shared_ptr<GASSkeleton>& OutSkeleton, std::vector<std::shared_ptr<GASAnimation>>& OutAnimations, std::vector<std::shared_ptr<GASMesh>>& OutMeshes);
 
 private:
-    // 内部处理管线
 
-   
     //处理骨骼结构：构建骨骼列表、层级关系、提取逆绑定矩阵 
     bool ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkeleton);
 
@@ -63,7 +53,6 @@ private:
     // Assimp 中很多节点只是辅助节点，我们需要通过 Mesh 中的 Bone 列表来标记哪些是有用的
     std::map<std::string, bool> ValidBoneMap;
 
-    // 临时缓存：记录骨骼名称对应的逆绑定矩阵 (Name -> Matrix)
-    // 因为逆绑定矩阵存在 aiMesh 中，而层级结构在 aiNode 中，需要暂存
+    // 临时缓存：记录骨骼名称对应的逆绑定矩阵 (Name -> Matrix) 因为逆绑定矩阵存在 aiMesh 中，而层级结构在 aiNode 中，需要暂存
     std::map<std::string, FGASMatrix4x4> InverseBindMatrixMap;
 };

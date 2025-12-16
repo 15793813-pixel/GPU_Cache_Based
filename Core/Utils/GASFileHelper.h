@@ -105,7 +105,6 @@ namespace GASFileHelper
     }
 
     //路径拼接 helper
-     
     inline std::string CombinePath(const std::string& Folder, const std::string& Filename)
     {
         if (Folder.empty()) return Filename;
