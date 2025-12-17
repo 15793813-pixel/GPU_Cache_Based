@@ -6,7 +6,7 @@
 #include <memory>
 #include <map>
 #include "../Types/GASAsset.h"
-
+#include "GASFileHelper.h"
 
 struct aiScene;
 struct aiNode;
@@ -43,10 +43,6 @@ private:
     
     //辅助：在 Assimp 动画通道中采样特定时间的变换
     void EvaluateChannel(const aiNodeAnim* Channel, double Time, FGASTransform& OutTransform);
-
-
-    
-
 
 private:
     // 临时缓存：记录哪些节点是真正的骨骼 (Name -> IsBone)

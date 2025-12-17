@@ -20,7 +20,7 @@ public:
     EGASAssetType GetType() const { return static_cast<EGASAssetType>(BaseHeader.AssetType); }
 
     //检查是否有效 
-    virtual bool IsValid() const { return BaseHeader.Magic == GAS_FILE_MAGIC; }
+    virtual bool IsValid() const { return BaseHeader.Magic == GAS_ASSET_MAGIC; }
 
 public:
     // 基础头部信息 (所有子类都包含)

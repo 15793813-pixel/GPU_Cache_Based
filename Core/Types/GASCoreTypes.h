@@ -6,7 +6,7 @@
 
 
 // 用于在读取二进制文件时校验这是否是本系统的合法文件
-static const uint32_t GAS_FILE_MAGIC = 0x46534147;
+const uint32_t GAS_ASSET_MAGIC = 0x20534147;
 
 // 文件版本号
 static const uint32_t GAS_FILE_VERSION = 1;
@@ -110,7 +110,7 @@ struct FGASSkinVertex
 //通用资产头文件 所有 .gas 文件的前 48字节都是这个结构
 struct FGASAssetHeader
 {
-    uint32_t Magic;         // [0-3]   校验码 "GASF"
+    uint32_t Magic;         // [0-3]   校验码 "GAS/"
     uint32_t Version;       // [4-7]   文件版本号
 
     // 资产本身的 GUID
@@ -130,11 +130,13 @@ struct FGASAssetHeader
 
     // 预留空间，保证 Header 总大小对齐到 64 字节 (Cache Line Friendly)
     // 当前已用 32 字节，剩余 32 字节
-    uint32_t Reserved[4];   // [32-47]
+    uint64_t XXHash64;      // [32-39]
+
+    uint32_t Reserved[2];   // [40-47]
 };
 
 //骨骼资产：48+48字节
-struct FGASSkeletonHeader : public FGASAssetHeader
+struct FGASSkeletonHeader 
 {
     // 骨骼数量
     uint32_t BoneCount;
@@ -159,7 +161,7 @@ struct FGASBoneDefinition
 };
 
 // 动画资产header 48+24+24=96字节
-struct FGASAnimationHeader : public FGASAssetHeader
+struct FGASAnimationHeader 
 {
     // [关键] 引用所属骨骼的 GUID 运行时加载动画时，必须检查当前 Mesh 的 Skeleton GUID 是否匹配
     uint64_t TargetSkeletonGUID;
@@ -180,8 +182,8 @@ struct FGASAnimTrackData
 // 动画文件的二进制布局逻辑：[FGASAnimationHeader] [FGASAnimTrackData * (FrameCount * TrackCount)] 
 // 数据排列顺序：[Frame0_Bone0, Frame0_Bone1...], [Frame1_Bone0...]
 
-// Mesh 专属头部信息 96字节
-struct FGASMeshHeader : public FGASAssetHeader
+// Mesh 专属头部信息48+48字节
+struct FGASMeshHeader 
 {
     uint32_t NumVertices = 0;
     uint32_t NumIndices = 0;

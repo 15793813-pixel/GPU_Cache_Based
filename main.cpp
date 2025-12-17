@@ -1,13 +1,32 @@
 ﻿#include <iostream>
-#include "Core/Utils/GASDataConverter.h"
+#include <filesystem>
+#include "Core/Utils/GASAssetManager.h"
+#include "Core/Types/GASConfig.h"
+#include "Core/Utils/GASDebug.h"
+
+namespace fs = std::filesystem;
+
 
 int main()
 {
-    std::cout << "My Animation System is running!" << std::endl;
+    GASLogger::Get().Initialize("Logs/GAS_Log.txt");
+    std::cout << "==========================================" << std::endl;
+    std::cout << "    GAS Animation System - Testing Suite   " << std::endl;
+    std::cout << "==========================================" << std::endl;
+    EnsureDirectoriesExist();
 
-    // 在这里写你的测试代码
-    // GASDataConverter converter;
-    // ...
+    if (!GASAssetManager::Get().GetGASMetadataStorage().Initialize(GAS_CONFIG::DATABASE_PATH))
+    {
+        std::cerr << "[Main] Failed to initialize Metadata Database." << std::endl;
+        return -1;
+    }
 
-    return 0; // 程序正常结束
+    RunImportTest("Assets/Raw/TestSkin.fbx");
+    RunImportTest("Assets/Raw/TestSkin.fbx");
+
+    std::cout << "\n==========================================" << std::endl;
+    std::cout << "             All Tests Finished           " << std::endl;
+    std::cout << "==========================================" << std::endl;
+
+    return 0;
 }

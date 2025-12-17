@@ -27,18 +27,24 @@
     <ClInclude Include="Core\Utils\GASAssetManager.h" />
     <ClInclude Include="Core\Utils\GASBinarySerializer.h" />
     <ClInclude Include="Core\Utils\GASDataConverter.h" />
+    <ClInclude Include="Core\Utils\GASDebug.h" />
     <ClInclude Include="Core\Utils\GASFileHelper.h" />
     <ClInclude Include="Core\Utils\GASImporter.h" />
     <ClInclude Include="Core\Utils\GASLogging.h" />
     <ClInclude Include="Core\Utils\GASMath.h" />
     <ClInclude Include="Core\Utils\GASMetadataStorage.h" />
+    <ClInclude Include="Core\Utils\GASHashManager.h" />
+    <ClInclude Include="Core\Utils\GASWindows.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Utils\GASAssetManager.cpp" />
     <ClCompile Include="Core\Utils\GASBinarySerializer.cpp" />
     <ClCompile Include="Core\Utils\GASDataConverter.cpp" />
+    <ClCompile Include="Core\Utils\GASDebug.cpp" />
+    <ClCompile Include="Core\Utils\GASHashManager.cpp" />
     <ClCompile Include="Core\Utils\GASImporter.cpp" />
     <ClCompile Include="Core\Utils\GASMetadataStorage.cpp" />
+    <ClCompile Include="Core\Utils\GASWindows.cpp" />
     <ClCompile Include="Dependency\include\sqlite\shell.c" />
     <ClCompile Include="Dependency\include\sqlite\sqlite3.c" />
     <ClCompile Include="main.cpp" />
@@ -99,7 +105,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -114,7 +120,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -127,7 +133,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Dependency\include;H:\Boost\boost_1_90_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -145,7 +151,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>

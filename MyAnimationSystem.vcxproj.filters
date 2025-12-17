@@ -129,6 +129,15 @@
     <ClInclude Include="Core\Types\GASConfig.h">
       <Filter>头文件\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Utils\GASDebug.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\GASHashManager.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Utils\GASWindows.h">
+      <Filter>头文件\Core\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Utils\GASDataConverter.cpp">
@@ -153,6 +162,15 @@
       <Filter>源文件\Dependecy</Filter>
     </ClCompile>
     <ClCompile Include="Core\Utils\GASAssetManager.cpp">
+      <Filter>源文件\Core\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Utils\GASDebug.cpp">
+      <Filter>源文件\Core\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Utils\GASHashManager.cpp">
+      <Filter>源文件\Core\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Utils\GASWindows.cpp">
       <Filter>源文件\Core\Utils</Filter>
     </ClCompile>
   </ItemGroup>

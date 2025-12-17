@@ -11,6 +11,9 @@
 #include "GASBinarySerializer.h"
 #include <shared_mutex>
 #include "../Types/GASConfig.h" 
+#include "GASWindows.h"
+#include "GASHashManager.h"
+#include "GASFileHelper.h"
 
 // 负责资产的导入、持久化、运行时加载和内存缓存管理。
 
@@ -39,6 +42,7 @@ public:
     //从数据库中查询元数据
     bool QueryMetadata(uint64_t GUID, FGASAssetMetadata& OutMetadata) const;
 
+    GASMetadataStorage& GetGASMetadataStorage(){return MetadataStorage;}
 private:
     //内存缓存：存储已加载到内存的资产 
     std::unordered_map<uint64_t, std::shared_ptr<GASAsset>> MemoryCache;

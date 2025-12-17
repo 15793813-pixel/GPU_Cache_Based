@@ -110,7 +110,7 @@ std::shared_ptr<GASAsset> GASBinarySerializer::LoadAssetFromDisk(const std::stri
     }
 
     //校验文件合法性
-    if (Header.Magic != GAS_FILE_MAGIC)
+    if (Header.Magic != GAS_ASSET_MAGIC)
     {
         std::cerr << "GAS Error: Invalid Magic Number in file: " << FilePath << std::endl;
         return nullptr;

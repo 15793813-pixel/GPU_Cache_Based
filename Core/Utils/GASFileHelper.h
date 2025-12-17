@@ -1,12 +1,9 @@
 ﻿#pragma once
-
-
 #include <string>
 #include <vector>
 #include <fstream>
 #include <iostream>
 #include <sys/stat.h>
-
 
 
 #if __cplusplus >= 201703L
@@ -25,6 +22,7 @@ namespace GASFileHelper
 		return (stat(FilePath.c_str(), &buffer) == 0);
 #endif
 	}
+
     inline bool LoadFileToBuffer(const std::string& FilePath, std::vector<uint8_t>& OutBuffer)
     {
         std::ifstream File(FilePath, std::ios::binary | std::ios::ate); // ate: 打开后定位到文件末尾以便获取大小
@@ -53,6 +51,18 @@ namespace GASFileHelper
         }
 
         return false;
+    }
+
+    // 读取原始文件的二进制数据 (用于计算 XXHash64)
+    inline std::vector<uint8_t> ReadRawFile(const std::string& FilePath)
+    {
+        std::vector<uint8_t> Buffer;
+        if (!LoadFileToBuffer(FilePath, Buffer))
+        {
+            // 如果读取失败，返回一个空的 vector
+            return {};
+        }
+        return Buffer;
     }
 
 

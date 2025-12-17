@@ -5,6 +5,11 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <filesystem>
+#include <assimp/DefaultLogger.hpp>
+#include <assimp/LogStream.hpp>
+#include "GASHashManager.h"
+
 
 GASImporter::GASImporter() {}
 GASImporter::~GASImporter() {}
@@ -19,7 +24,18 @@ struct BoneInfluence
         return Weight > other.Weight; 
     }
 };
-
+// 放在 GASImporter.cpp 的最上面，include 之后
+class GASAssimpLogStream : public Assimp::LogStream
+{
+public:
+    // 必须实现这个纯虚函数
+    void write(const char* message) override
+    {
+        // 这里把 Assimp 的日志转发给你的 GAS_LOG 或者直接 printf
+        // 注意：Assimp 的 message 通常末尾自带换行符
+        printf("[Assimp Internal] %s", message);
+    }
+};
 
 bool GASImporter::ImportFromFile(const std::string& FilePath,
     std::shared_ptr<GASSkeleton>& OutSkeleton,
@@ -41,15 +57,15 @@ bool GASImporter::ImportFromFile(const std::string& FilePath,
 
     const aiScene* Scene = Importer.ReadFile(FilePath, Flags);
 
-    if (!Scene || Scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !Scene->mRootNode)
+    if (!Scene  || !Scene->mRootNode)
     {
         GAS_LOG_ERROR("Assimp Import Failed: %s", Importer.GetErrorString());
         return false;
     }
 
-    // 1. 创建骨骼对象
+    //创建骨骼对象
     OutSkeleton = std::make_shared<GASSkeleton>();
-    OutSkeleton->AssetName = FilePath; // 简单起见用路径做名字
+    OutSkeleton->AssetName = GASFileHelper::GetFileName(FilePath); // 简单起见用路径做名字
 
     //处理骨骼 (这是后续动画的基础)
     if (!ProcessSkeleton(Scene, OutSkeleton.get()))
@@ -121,9 +137,17 @@ bool GASImporter::ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkele
 
     // 递归遍历 Node 树，构建线性骨骼数组  从 Root Node 开始
     RecursivelyProcessBoneNode(Scene->mRootNode, -1, TargetSkeleton);
+    //补全 Header
+    TargetSkeleton->BaseHeader.Magic = GAS_ASSET_MAGIC;
+    TargetSkeleton->BaseHeader.Version = 1;
+    TargetSkeleton->BaseHeader.AssetType = EGASAssetType::Skeleton;
+    TargetSkeleton->BaseHeader.HeaderSize = sizeof(FGASAssetHeader) + sizeof(FGASSkeletonHeader);
+    TargetSkeleton->SkeletonHeader.BoneCount = (uint32_t)TargetSkeleton->Bones.Num();
+    TargetSkeleton->BaseHeader.DataSize = TargetSkeleton->SkeletonHeader.BoneCount * sizeof(FGASBoneDefinition);
+    TargetSkeleton->BaseHeader.XXHash64 = CalculateXXHash64(TargetSkeleton->Bones.GetData(), TargetSkeleton->BaseHeader.DataSize);
 
-    // 完成构建，更新 Header
-    TargetSkeleton->SkeletonHeader.BoneCount = TargetSkeleton->Bones.Num();
+
+    // 完成构建，重建映射表
     TargetSkeleton->RebuildBoneMap(); 
 
     return TargetSkeleton->Bones.Num() > 0;
@@ -203,6 +227,20 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
             }
         }
 
+
+        NewAnim->BaseHeader.Magic = GAS_ASSET_MAGIC;
+        NewAnim->BaseHeader.Version = 1;
+        NewAnim->BaseHeader.AssetType = EGASAssetType::Animation;
+        NewAnim->BaseHeader.HeaderSize = sizeof(FGASAnimationHeader) + sizeof(FGASAssetHeader);
+        NewAnim->BaseHeader.DataSize = (uint32_t)(TotalDataSize * sizeof(FGASAnimTrackData));
+        NewAnim->BaseHeader.XXHash64 = CalculateXXHash64(NewAnim->Tracks.GetData(), NewAnim->BaseHeader.DataSize);
+        // 动画特有字段
+        NewAnim->AnimHeader.TargetSkeletonGUID = Skeleton->GetGUID(); // 引用所属骨骼
+        NewAnim->AnimHeader.FrameCount = (uint32_t)FrameCount;
+        NewAnim->AnimHeader.TrackCount = (uint32_t)Skeleton->GetNumBones();
+        NewAnim->AnimHeader.FrameRate = 30.0f;
+        NewAnim->AnimHeader.Duration = (float)(SrcAnim->mDuration / TicksPerSecond);
+
         TargetAnimList.push_back(NewAnim);
     }
 
@@ -257,13 +295,25 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
     // 遍历顶点，进行权重截断和归一化 
     TargetMesh->Vertices.Resize(Mesh->mNumVertices);
 
+    FGASAABB BBox;
+    BBox.Min = FGASVector3(FLT_MAX, FLT_MAX, FLT_MAX);
+    BBox.Max = FGASVector3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
     for (unsigned int i = 0; i < Mesh->mNumVertices; ++i)
     {
         FGASSkinVertex& Vertex = TargetMesh->Vertices[i];
         std::vector<BoneInfluence>& Influences = AllInfluences[i];
 
+        const FGASVector3& Pos = TargetMesh->Vertices[i].Position;
         // 提取基础几何信息
         Vertex.Position = GASDataConverter::ToVector3(Mesh->mVertices[i]);
+        BBox.Min.x = std::min(BBox.Min.x, Vertex.Position.x);
+        BBox.Min.y = std::min(BBox.Min.y, Vertex.Position.y);
+        BBox.Min.z = std::min(BBox.Min.z, Vertex.Position.z);
+        BBox.Max.x = std::max(BBox.Max.x, Vertex.Position.x);
+        BBox.Max.y = std::max(BBox.Max.y, Vertex.Position.y);
+        BBox.Max.z = std::max(BBox.Max.z, Vertex.Position.z);
+
         if (Mesh->HasNormals()) {
             Vertex.Normal = GASDataConverter::ToVector3(Mesh->mNormals[i]);
         }
@@ -332,6 +382,22 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
             }
         }
     }
+
+    TargetMesh->BaseHeader.Magic = GAS_ASSET_MAGIC;
+    TargetMesh->BaseHeader.Version = 1;
+    TargetMesh->BaseHeader.AssetType =  EGASAssetType::Mesh;
+    TargetMesh->BaseHeader.HeaderSize = sizeof(FGASMeshHeader);
+
+    TargetMesh->MeshHeader.NumVertices = (uint32_t)Mesh->mNumVertices;
+    TargetMesh->MeshHeader.NumIndices = (uint32_t)TargetMesh->Indices.Num();
+    TargetMesh->MeshHeader.AABB = BBox;
+    uint32_t VertSize = TargetMesh->MeshHeader.NumVertices * sizeof(FGASSkinVertex);
+    uint32_t IdxSize = TargetMesh->MeshHeader.NumIndices * sizeof(uint32_t);
+    TargetMesh->BaseHeader.DataSize = VertSize + IdxSize;
+    uint64_t VertHash = CalculateXXHash64(TargetMesh->Vertices.GetData(), VertSize);
+    uint64_t IdxHash = CalculateXXHash64(TargetMesh->Indices.GetData(), IdxSize);
+    TargetMesh->BaseHeader.XXHash64 = VertHash ^ (IdxHash + 0x9e3779b9 + (VertHash << 6) + (VertHash >> 2));
+
     return true;
 }
 
@@ -339,19 +405,25 @@ bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, G
 void GASImporter::RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentBoneIndex, GASSkeleton* TargetSkeleton)
 {
     std::string NodeName = Node->mName.C_Str();
+    if (NodeName.find("_$AssimpFbx$_") != std::string::npos)
+    {
+        for (unsigned int i = 0; i < Node->mNumChildren; ++i)
+        {
+            RecursivelyProcessBoneNode(Node->mChildren[i], ParentBoneIndex, TargetSkeleton);
+        }
+        return; 
+    }
     std::string NormalizedName = GASDataConverter::NormalizeBoneName(NodeName);
 
     int32_t CurrentBoneIndex = -1;
 
-    // 检查这个节点是不是我们在 Mesh 中发现的骨骼，或者它是否是骨架结构的一部分(有时候 Root 节点不是 Bone，但我们需要它作为层级根)
-    // 简单的判定逻辑：如果它在 ValidMap 里，或者是有效的父节点，或者是Root
     bool bIsBone = (ValidBoneMap.find(NormalizedName) != ValidBoneMap.end());
 
     // 如果是骨骼，或者是必须保留的层级节点，则加入 Skeleton
     if (bIsBone || ParentBoneIndex != -1) // 只要父节点是骨骼，我们也默认保留子节点以维持层级
     {
         FGASBoneDefinition NewBone;
-        SetGASBoneName(NewBone, NodeName.c_str());
+        SetGASBoneName(NewBone, NormalizedName.c_str());
         NewBone.ParentIndex = ParentBoneIndex;
 
         // 设置逆绑定矩阵 (如果不是 Skinned Bone，比如末端节点，可能没有 IBM，设为 Identity)

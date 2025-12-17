@@ -13,6 +13,7 @@ struct FGASAssetMetadata
     std::string Name;
     EGASAssetType Type = EGASAssetType::Skeleton;
     std::string BinaryFilePath; // 存储 .gas 文件路径
+    uint64_t FileHash;
     int32_t FrameCount = 0;
     float Duration = 0.0f;
     int32_t BoneCount = 0;
