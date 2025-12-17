@@ -192,6 +192,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
 
     GAS_LOG("Import SUCCESS. Main GUID: %llu,FileNme: %s", ExpectedGUID,GASFileHelper::GetFileName(SourceFilePath).c_str());
 
+
     return SkeletonGUID;
 }
 

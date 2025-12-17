@@ -10,6 +10,7 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 #endif
+#include "GASLogging.h"
 
 namespace GASFileHelper
 {
@@ -28,7 +29,7 @@ namespace GASFileHelper
         std::ifstream File(FilePath, std::ios::binary | std::ios::ate); // ate: 打开后定位到文件末尾以便获取大小
         if (!File.is_open())
         {
-            std::cerr << "[GASFileHelper] Failed to open file for reading: " << FilePath << std::endl;
+            GAS_LOG_ERROR("Failed to open file for reading: %s", FilePath.c_str());
             return false;
         }
 
@@ -66,7 +67,7 @@ namespace GASFileHelper
     }
 
 
-     // 将内存数据写入二进制文件
+    // 将内存数据写入二进制文件
     inline bool SaveBufferToFile(const std::string& FilePath, const void* Data, size_t Size)
     {
         if (!Data || Size == 0) return false;
@@ -74,15 +75,13 @@ namespace GASFileHelper
         std::ofstream File(FilePath, std::ios::binary | std::ios::trunc);
         if (!File.is_open())
         {
-            std::cerr << "[GASFileHelper] Failed to open file for writing: " << FilePath << std::endl;
+            GAS_LOG_ERROR("Failed to open file for writing: %s", FilePath.c_str());
             return false;
         }
 
         File.write(reinterpret_cast<const char*>(Data), Size);
         return File.good();
     }
-
-    
      //获取文件扩展名 (如 ".fbx", ".gas")  
     inline std::string GetFileExtension(const std::string& FilePath)
     {

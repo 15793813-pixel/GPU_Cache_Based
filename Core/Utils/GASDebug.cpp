@@ -6,20 +6,22 @@
 void EnsureDirectoriesExist()
 {
     // 递归创建目录
-    try {\
+    try {
         if (!fs::exists(GAS_CONFIG::BINARY_CACHE_PATH)) {
             fs::create_directories(GAS_CONFIG::BINARY_CACHE_PATH);
-            std::cout << "[System] Created binary cache directory: " << GAS_CONFIG::BINARY_CACHE_PATH << std::endl;
+            // 使用 GAS_LOG 记录成功信息
+            GAS_LOG("Created binary cache directory: %s", GAS_CONFIG::BINARY_CACHE_PATH);
         }
-
         // 确保数据库目录也存在 (Metadata.db 的父目录)
         fs::path DBPath(GAS_CONFIG::DATABASE_PATH);
         if (!fs::exists(DBPath.parent_path())) {
             fs::create_directories(DBPath.parent_path());
+            GAS_LOG("Created database directory: %s", DBPath.parent_path().string().c_str());
         }
     }
     catch (const std::exception& e) {
-        std::cerr << "[System] Error creating directories: " << e.what() << std::endl;
+        // 使用 GAS_LOG_ERROR 记录异常，宏会自动附加文件名和行号
+        GAS_LOG_ERROR("Exception during directory creation: %s", e.what());
     }
 }
 

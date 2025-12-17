@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include "GASLogging.h"
 
 
 //辅助：写入字符串(长度 + 内容)
@@ -43,6 +44,7 @@ bool GASBinarySerializer::WriteData(std::ofstream& Stream, const void* Data, siz
     return true;
 }
 
+//读数据
 bool GASBinarySerializer::ReadData(std::ifstream& Stream, void* Data, size_t Size)
 {
     if (!Stream.read(reinterpret_cast<char*>(Data), Size))
@@ -52,7 +54,7 @@ bool GASBinarySerializer::ReadData(std::ifstream& Stream, void* Data, size_t Siz
     return true;
 }
 
-//保存资产
+//保存到磁盘
 bool GASBinarySerializer::SaveAssetToDisk(const GASAsset* Asset, const std::string& FilePath)
 {
     if (!Asset) return false;
@@ -60,17 +62,15 @@ bool GASBinarySerializer::SaveAssetToDisk(const GASAsset* Asset, const std::stri
     std::ofstream FileStream(FilePath, std::ios::binary | std::ios::trunc);
     if (!FileStream.is_open())
     {
-        std::cerr << "GAS Error: Failed to open file for writing: " << FilePath << std::endl;
+        GAS_LOG_ERROR("Failed to open file for writing: %s", FilePath.c_str());
         return false;
     }
 
-    //写入通用头部
     if (!WriteData(FileStream, &Asset->BaseHeader, sizeof(FGASAssetHeader)))
     {
         return false;
     }
 
-    // 根据类型分发到具体的序列化函数
     EGASAssetType Type = static_cast<EGASAssetType>(Asset->BaseHeader.AssetType);
 
     switch (Type)
@@ -81,45 +81,40 @@ bool GASBinarySerializer::SaveAssetToDisk(const GASAsset* Asset, const std::stri
     case EGASAssetType::Animation:
         return SerializeAnimation(FileStream, static_cast<const GASAnimation*>(Asset));
 
-
     case EGASAssetType::Mesh:
         return SerializeMesh(FileStream, static_cast<const GASMesh*>(Asset));
 
     default:
-        std::cerr << "GAS Error: Unknown Asset Type during save." << std::endl;
+        GAS_LOG_ERROR("Unknown Asset Type during save. Type: %d", (int)Type);
         return false;
     }
 }
 
-
-// 主入口：加载资产
+//从磁盘读取资产
 std::shared_ptr<GASAsset> GASBinarySerializer::LoadAssetFromDisk(const std::string& FilePath)
 {
     std::ifstream FileStream(FilePath, std::ios::binary);
     if (!FileStream.is_open())
     {
-        std::cerr << "GAS Error: Failed to open file for reading: " << FilePath << std::endl;
+        GAS_LOG_ERROR("Failed to open file for reading: %s", FilePath.c_str());
         return nullptr;
     }
 
-    // 读取通用头部
     FGASAssetHeader Header;
     if (!ReadData(FileStream, &Header, sizeof(FGASAssetHeader)))
     {
         return nullptr;
     }
 
-    //校验文件合法性
     if (Header.Magic != GAS_ASSET_MAGIC)
     {
-        std::cerr << "GAS Error: Invalid Magic Number in file: " << FilePath << std::endl;
+        GAS_LOG_ERROR("Invalid Magic Number in file: %s", FilePath.c_str());
         return nullptr;
     }
 
     std::shared_ptr<GASAsset> ResultAsset = nullptr;
     EGASAssetType Type = static_cast<EGASAssetType>(Header.AssetType);
 
-    //  根据类型创建对象并反序列化
     switch (Type)
     {
     case EGASAssetType::Skeleton:
@@ -153,28 +148,24 @@ std::shared_ptr<GASAsset> GASBinarySerializer::LoadAssetFromDisk(const std::stri
         break;
     }
     default:
-        std::cerr << "GAS Error: Unknown Asset Type in header." << std::endl;
+        GAS_LOG_ERROR("Unknown Asset Type in header: %d", (int)Type);
         break;
     }
 
     return ResultAsset;
 }
 
-
-// 骨骼 (Skeleton) 序列化实现
 bool GASBinarySerializer::SerializeSkeleton(std::ofstream& Stream, const GASSkeleton* Skeleton)
 {
-    //写 SkeletonHeader
     if (!WriteData(Stream, &Skeleton->SkeletonHeader, sizeof(FGASSkeletonHeader))) return false;
 
-    //  写 Bones 数组
     for (int32_t i = 0; i < Skeleton->Bones.Num(); ++i)
     {
         const FGASBoneDefinition& Bone = Skeleton->Bones[i];
 
-        if (!WriteString(Stream, Bone.Name)) return false; 
+        if (!WriteString(Stream, Bone.Name)) return false;
         if (!WriteData(Stream, &Bone.ParentIndex, sizeof(int32_t))) return false;
-        if (!WriteData(Stream, &Bone.InverseBindMatrix, sizeof(FGASMatrix4x4))) return false; 
+        if (!WriteData(Stream, &Bone.InverseBindMatrix, sizeof(FGASMatrix4x4))) return false;
     }
     return true;
 }

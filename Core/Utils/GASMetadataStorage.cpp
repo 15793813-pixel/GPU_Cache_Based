@@ -33,22 +33,22 @@ GASMetadataStorage::~GASMetadataStorage()
 // 初始化数据库，创建表结构
 bool GASMetadataStorage::Initialize(const std::string& DBPath)
 {
+    //打开或创建数据库文件
     int rc = sqlite3_open(DBPath.c_str(), &DB);
     if (rc != SQLITE_OK)
     {
-        std::cerr << "ERROR: Cannot open database: " << sqlite3_errmsg(DB) << std::endl;
+        GAS_LOG_ERROR("Cannot open database: %s (Path: %s)", sqlite3_errmsg(DB), DBPath.c_str());
         return false;
     }
-
+    //执行建表语句 (SQL_CREATE_TABLE)
     char* zErrMsg = 0;
     rc = sqlite3_exec(DB, SQL_CREATE_TABLE, 0, 0, &zErrMsg);
     if (rc != SQLITE_OK)
     {
-        std::cerr << "ERROR: SQL error during table creation: " << zErrMsg << std::endl;
+        GAS_LOG_ERROR("SQL error during table creation: %s", zErrMsg);
         sqlite3_free(zErrMsg);
         return false;
     }
-
     return true;
 }
 
