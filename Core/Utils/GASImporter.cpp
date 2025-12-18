@@ -10,6 +10,7 @@
 #include <filesystem>
 
 #include "GASHashManager.h"
+#include "GASDebug.h"
 
 
 GASImporter::GASImporter() {}
@@ -129,7 +130,7 @@ bool GASImporter::ProcessSkeleton(const aiScene* Scene, GASSkeleton* TargetSkele
     TargetSkeleton->SkeletonHeader.BoneCount = BoneCount;
     TargetSkeleton->BaseHeader.HeaderSize = sizeof(FGASAssetHeader) + sizeof(FGASSkeletonHeader);
     TargetSkeleton->BaseHeader.DataSize = BoneCount * sizeof(FGASBoneDefinition);
-
+    GASDebugAssimp::ShowDebugWindow(Scene, ValidBoneMap);
     // 计算 Hash
     TargetSkeleton->BaseHeader.XXHash64 = CalculateXXHash64(TargetSkeleton->Bones.GetData(), TargetSkeleton->BaseHeader.DataSize);
 

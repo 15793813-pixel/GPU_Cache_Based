@@ -1,0 +1,9 @@
+﻿#include <assimp/Logger.hpp>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/DefaultLogger.hpp>
+#include <assimp/LogStream.hpp>
+#include <assimp/vector3.h>
+#include <assimp/quaternion.h>
+#include <assimp/matrix4x4.h>

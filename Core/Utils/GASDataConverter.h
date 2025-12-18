@@ -3,11 +3,9 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-
 #include "../Types/GASCoreTypes.h"
-#include <assimp/vector3.h>
-#include <assimp/quaternion.h>
-#include <assimp/matrix4x4.h>
+#include "../Types/GASAssimpHeader.h"
+
 
 //负责将外部异构数据（主要是 Assimp 数据）转换为系统内部标准格式 (FGAS*)。
 

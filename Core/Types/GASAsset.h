@@ -1,11 +1,6 @@
 ﻿#pragma once
-
-#include "GASCoreTypes.h"
 #include "GASArray.h"
-#include <string>
-#include <unordered_map>
-#include <memory>
-
+#include "GASCoreTypes.h"
 
 
 class GASAsset

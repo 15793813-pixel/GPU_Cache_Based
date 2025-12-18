@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include <cstdint>
 
 // 资产管理相关枚举

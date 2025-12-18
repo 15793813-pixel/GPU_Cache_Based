@@ -1,9 +1,4 @@
 ﻿#pragma once
-
-#include <string>
-#include <vector>
-#include <memory>
-#include <unordered_map>
 #include "../Types/GASAsset.h"
 #include "GASMetadataStorage.h"
 #include "GASImporter.h"

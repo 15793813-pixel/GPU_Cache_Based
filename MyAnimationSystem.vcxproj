@@ -19,8 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Core\Types\GASHeader.h" />
     <ClInclude Include="Core\Types\GASArray.h" />
     <ClInclude Include="Core\Types\GASAsset.h" />
+    <ClInclude Include="Core\Types\GASAssimpHeader.h" />
     <ClInclude Include="Core\Types\GASConfig.h" />
     <ClInclude Include="Core\Types\GASCoreTypes.h" />
     <ClInclude Include="Core\Types\GASEnums.h" />
@@ -112,6 +114,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib\lib-vc2022;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,6 +131,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib\lib-vc2022;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -141,8 +147,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)Dependency\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>assimp-vc143-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib\lib-vc2022;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -158,6 +164,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib\lib-vc2022;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3.lib;assimp-vc143-mt.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -138,6 +138,12 @@
     <ClInclude Include="Core\Utils\GASWindows.h">
       <Filter>头文件\Core\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Core\Types\GASHeader.h">
+      <Filter>头文件\Core\Types</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Types\GASAssimpHeader.h">
+      <Filter>头文件\Core\Types</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Utils\GASDataConverter.cpp">

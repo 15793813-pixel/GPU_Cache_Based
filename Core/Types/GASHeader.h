@@ -1,0 +1,10 @@
+﻿#pragma once
+#include"GASConfig.h"
+#include"GASAsset.h"
+#include"GASCoreTypes.h"
+#include"../Utils/GASDebug.h"
+#include"../Utils/GASWindows.h"
+#include"../Utils/GASMath.h"
+#include"../Utils/GASLogging.h"
+#include"../Utils/GASLogging.h"
+#include"../Utils/GASLogging.h"

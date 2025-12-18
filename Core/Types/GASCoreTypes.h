@@ -1,5 +1,4 @@
 ﻿#pragma once
-
 #include <cstdint>
 #include <cstring>
 #include "GASEnums.h" 
@@ -28,6 +27,14 @@ struct FGASVector3
 
     FGASVector3() : X(0.f), Y(0.f), Z(0.f) {}
     FGASVector3(float InX, float InY, float InZ) : X(InX), Y(InY), Z(InZ) {}
+
+    FGASVector3 operator-(const  FGASVector3& Other) const
+    {
+        return FGASVector3(X-Other.X, y - Other.y, z - Other.z);
+    }
+
+    float LengthSquared() { return x * x + y * y + z * z; }
+
 };
 
 struct FGASQuaternion
