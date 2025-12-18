@@ -17,10 +17,8 @@ enum class EGASLogLevel
     Error
 };
 
-/**
- * GASLogger (单例模式)
- * 简单的线程安全日志记录器，支持输出到文件和控制台
- */
+// GASLogger (单例模式)简单的线程安全日志记录器，支持输出到文件和控制台
+
 class GASLogger
 {
 public:
@@ -30,7 +28,7 @@ public:
         return Instance;
     }
 
-    /** 初始化日志系统 (通常在 main 函数或系统启动时调用) */
+    // 初始化日志系统
     void Initialize(const std::string& LogFilePath = "GAS_Log.txt")
     {
         std::lock_guard<std::mutex> Lock(LogMutex);
@@ -46,7 +44,7 @@ public:
         }
     }
 
-    /** 关闭日志文件 */
+    // 关闭日志文件 
     void Shutdown()
     {
         std::lock_guard<std::mutex> Lock(LogMutex);

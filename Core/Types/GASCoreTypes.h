@@ -42,6 +42,16 @@ struct FGASQuaternion
     FGASQuaternion(float InX, float InY, float InZ, float InW) : X(InX), Y(InY), Z(InZ), W(InW) {}
 };
 
+struct BoneInfluence
+{
+    uint32_t Index;
+    float Weight;
+    // 降序排序，权重大的在前
+    bool operator<(const BoneInfluence& other) const {
+        return Weight > other.Weight;
+    }
+};
+
 //行优先
 struct FGASMatrix4x4
 {
@@ -54,6 +64,23 @@ struct FGASMatrix4x4
     FGASMatrix4x4()
     {
         SetIdentity();
+    }
+
+    FGASMatrix4x4 operator*(const FGASMatrix4x4& Other) const
+    {
+        FGASMatrix4x4 Result;
+        for (int Row = 0; Row < 4; ++Row)
+        {
+            for (int Col = 0; Col < 4; ++Col)
+            {
+                Result.m[Row][Col] =
+                    m[Row][0] * Other.m[0][Col] +
+                    m[Row][1] * Other.m[1][Col] +
+                    m[Row][2] * Other.m[2][Col] +
+                    m[Row][3] * Other.m[3][Col];
+            }
+        }
+        return Result;
     }
 
     void SetIdentity()

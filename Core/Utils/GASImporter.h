@@ -38,14 +38,18 @@ private:
 
     // 辅助工具
 
+    bool MarkRequiredNodes(aiNode* Node);
+
     // 递归遍历节点树，展平为骨骼数组 
-    void RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentBoneIndex, GASSkeleton* TargetSkeleton);
+    void RecursivelyProcessBoneNode(const aiNode* Node, int32_t ParentBoneIndex, GASSkeleton* TargetSkeleton, FGASMatrix4x4 AccumulatedTransform);
+
     
+
     //辅助：在 Assimp 动画通道中采样特定时间的变换
     void EvaluateChannel(const aiNodeAnim* Channel, double Time, FGASTransform& OutTransform);
 
 private:
-    // 临时缓存：记录哪些节点是真正的骨骼 (Name -> IsBone)
+    // 临时缓存：记录哪些节点是真正的骨骼 
     // Assimp 中很多节点只是辅助节点，我们需要通过 Mesh 中的 Bone 列表来标记哪些是有用的
     std::map<std::string, bool> ValidBoneMap;
 
