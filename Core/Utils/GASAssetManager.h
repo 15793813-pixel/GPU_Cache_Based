@@ -24,8 +24,7 @@ public:
     //初始化管理器：建立数据库连接、设置路径 
     bool Initialize();
 
-    // 资产导入与持久化 (Offline / Editor-Time)
-    //执行导入、标准化、烘焙、序列化和注册的全流程
+    // 资产导入与持久化 (Offline / Editor-Time)    //执行导入、标准化、烘焙、序列化和注册的全流程
     uint64_t ImportAsset(const std::string& SourceFilePath);
 
     // 运行时请求资产，优先从内存缓存中获取。 如果不在缓存中，则通过 MetadataStorage 查找路径，并从磁盘加载。

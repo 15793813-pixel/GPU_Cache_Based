@@ -45,10 +45,10 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
 
     std::vector<uint8_t> FileData = GASFileHelper::ReadRawFile(SourceFilePath);
     uint64_t CurrentFileHash = CalculateXXHash64(FileData.data(), FileData.size());
-    uint64_t ExpectedGUID = GenerateGUID64(SourceFilePath);
 
     // 确定文件夹名称
     std::string FolderName = SrcPath.stem().string();
+    uint64_t ExpectedGUID = GenerateGUID64(FolderName);
     fs::path TargetFolder = fs::path(GAS_CONFIG::BINARY_CACHE_PATH) / FolderName;
 
     if (!fs::exists(TargetFolder)) {
@@ -87,7 +87,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
     }
 
     // 生成 GUID 
-    uint64_t SkeletonGUID = GenerateGUID64(SourceFilePath);
+    uint64_t SkeletonGUID = GenerateGUID64(FolderName);
 
     // --- 处理 Skeleton ---
     if (SkeletonAsset)
@@ -124,7 +124,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
         if (!AnimAsset) continue;
 
         // 生成唯一动画 GUID (基于源文件 + 动画索引/名称)
-        std::string AnimKey = SourceFilePath + "_Anim_" + std::to_string(i);
+        std::string AnimKey = FolderName + "_Anim_" + std::to_string(i);
 
         uint64_t AnimGUID = GenerateGUID64(AnimKey);
         AnimAsset->BaseHeader.AssetGUID = AnimGUID;
@@ -157,7 +157,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
         if (!MeshAsset) continue;
 
         // 生成唯一 Mesh GUID
-        std::string MeshKey = SourceFilePath + "_Mesh_" + MeshAsset->AssetName;
+        std::string MeshKey = FolderName + "_Mesh_" + MeshAsset->AssetName;
 
         uint64_t MeshGUID = GenerateGUID64(MeshKey);
         MeshAsset->BaseHeader.AssetGUID = MeshGUID;

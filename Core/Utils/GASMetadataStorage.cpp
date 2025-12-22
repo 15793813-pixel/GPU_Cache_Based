@@ -52,7 +52,7 @@ bool GASMetadataStorage::Initialize(const std::string& DBPath)
     return true;
 }
 
-// 注册资产元数据 - 增加了 FileHash 的绑定
+// 注册资产元数据
 bool GASMetadataStorage::RegisterAsset(const FGASAssetMetadata& Metadata)
 {
     if (!DB) return false;
@@ -119,6 +119,39 @@ bool GASMetadataStorage::QueryAssetByGUID(uint64_t GUID, FGASAssetMetadata& OutM
     return false;
 }
 
+//通过文件hash寻找到对应的所有资产
+bool GASMetadataStorage::QueryAssetsByFileHash(uint64_t FileHash, std::vector<FGASAssetMetadata>& OutList)
+{
+    if (!DB) return false;
+
+    const char* sql = "SELECT GUID, Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount, VerticeCount, MeshCount FROM Assets WHERE FileHash = ?;";
+
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(DB, sql, -1, &stmt, NULL) != SQLITE_OK) return false;
+
+    sqlite3_bind_int64(stmt, 1, FileHash);
+
+    OutList.clear();
+    while (sqlite3_step(stmt) == SQLITE_ROW)
+    {
+        FGASAssetMetadata Meta;
+        Meta.GUID = (uint64_t)sqlite3_column_int64(stmt, 0);
+        Meta.Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        Meta.Type = static_cast<EGASAssetType>(sqlite3_column_int(stmt, 2));
+        Meta.BinaryFilePath = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
+        Meta.FrameCount = sqlite3_column_int(stmt, 4);
+        Meta.Duration = (float)sqlite3_column_double(stmt, 5);
+        Meta.BoneCount = sqlite3_column_int(stmt, 6);
+        Meta.VerticeCount = sqlite3_column_int(stmt, 7);
+        Meta.MeshCount = sqlite3_column_int(stmt, 8);
+
+        OutList.push_back(Meta);
+    }
+
+    sqlite3_finalize(stmt);
+    return !OutList.empty();
+}
+
 // 查找所有资产元数据
 std::vector<FGASAssetMetadata> GASMetadataStorage::QueryAllAssets() const
 {
@@ -152,34 +185,3 @@ std::vector<FGASAssetMetadata> GASMetadataStorage::QueryAllAssets() const
     return Results;
 }
 
-bool GASMetadataStorage::QueryAssetsByFileHash(uint64_t FileHash, std::vector<FGASAssetMetadata>& OutList)
-{
-    if (!DB) return false;
-
-    const char* sql = "SELECT GUID, Name, Type, BinaryFilePath, FrameCount, Duration, BoneCount, VerticeCount, MeshCount FROM Assets WHERE FileHash = ?;";
-
-    sqlite3_stmt* stmt;
-    if (sqlite3_prepare_v2(DB, sql, -1, &stmt, NULL) != SQLITE_OK) return false;
-
-    sqlite3_bind_int64(stmt, 1, FileHash);
-
-    OutList.clear();
-    while (sqlite3_step(stmt) == SQLITE_ROW)
-    {
-        FGASAssetMetadata Meta;
-        Meta.GUID = (uint64_t)sqlite3_column_int64(stmt, 0);
-        Meta.Name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        Meta.Type = static_cast<EGASAssetType>(sqlite3_column_int(stmt, 2));
-        Meta.BinaryFilePath = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
-        Meta.FrameCount = sqlite3_column_int(stmt, 4);
-        Meta.Duration = (float)sqlite3_column_double(stmt, 5);
-        Meta.BoneCount = sqlite3_column_int(stmt, 6);
-        Meta.VerticeCount = sqlite3_column_int(stmt, 7);
-        Meta.MeshCount = sqlite3_column_int(stmt, 8); 
-
-        OutList.push_back(Meta);
-    }
-
-    sqlite3_finalize(stmt);
-    return !OutList.empty();
-}

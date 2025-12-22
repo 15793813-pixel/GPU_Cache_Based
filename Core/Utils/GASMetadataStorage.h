@@ -21,6 +21,8 @@ struct FGASAssetMetadata
     int32_t MeshCount = 0;
 };
 
+
+
 //负责管理资产的元数据索引，基于 SQLite 实现。
 class GASMetadataStorage
 {
@@ -39,6 +41,8 @@ public:
 
     // 通过Hash找到所有的.gsa文件
     bool QueryAssetsByFileHash(uint64_t FileHash, std::vector<FGASAssetMetadata>& OutList);
+
+ 
 
     // 查找所有资产元数据
     std::vector<FGASAssetMetadata> QueryAllAssets() const;
