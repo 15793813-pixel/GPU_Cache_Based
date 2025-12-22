@@ -4,6 +4,7 @@
 #include <map>
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
+#include "../Core/Utils/GASMetadataStorage.h"
 
 struct GLFWwindow;
 
@@ -16,7 +17,9 @@ public:
     static void OnFileDrop(GLFWwindow* window, int count, const char** paths);
 
 private:
-    static void RenderUI();
+    static void RenderImporterPanel();   // 左侧面板 (导入 + 结果信息)
+    static void RenderHierarchyPanel();  // 右侧面板 (树状图)
+    static void DrawImGuiTreeRecursive(const aiNode* Node);
     static void RenderScene();
 
     // --- 新增：更新后的骨骼绘制函数 ---
@@ -36,7 +39,8 @@ private:
     // 路径与状态
     static std::string m_SourceFilePath;    // 拖入的源文件路径
     static std::string m_StatusMessage;     // 左上角状态栏文字
-    static std::string m_ConvertedPath;     // 转换成功后的 .gas 文件相对路径
+    static std::vector<FGASAssetMetadata> m_ImportedResults;
+    static uint64_t m_CurrentSourceHash;
     static std::map<std::string, bool> m_BoneMap;
 
     // --- 新增：弹窗控制 ---

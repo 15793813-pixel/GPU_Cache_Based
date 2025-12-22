@@ -143,7 +143,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
             Metadata.BinaryFilePath = RelativePath;
             Metadata.FrameCount = AnimAsset->GetNumFrames();
             Metadata.Duration = AnimAsset->GetDuration();
-
+            Metadata.FileHash = CurrentFileHash;
             MetadataStorage.RegisterAsset(Metadata);
 
             std::unique_lock<std::shared_mutex> lock(CacheMutex);
@@ -183,7 +183,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
             Metadata.Type = static_cast<EGASAssetType>(MeshAsset->BaseHeader.AssetType);
             Metadata.BinaryFilePath = RelativePath;
             Metadata.VerticeCount = MeshAsset->GetNumVertices();
-
+            Metadata.FileHash = CurrentFileHash;
             MetadataStorage.RegisterAsset(Metadata);
 
             std::unique_lock<std::shared_mutex> lock(CacheMutex);

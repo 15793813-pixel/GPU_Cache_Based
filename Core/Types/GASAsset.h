@@ -131,13 +131,13 @@ public:
         BaseHeader.AssetType = EGASAssetType::Mesh;
     }
 
-    /** 获取顶点数量 */
+    // 获取顶点数量 
     int32_t GetNumVertices() const { return Vertices.Num(); }
 
-    /** 获取索引数量 */
+    //获取索引数量
     int32_t GetNumIndices() const { return Indices.Num(); }
 
-    /** 获取包围盒 (用于剔除) */
+    // 获取包围盒 
     const FGASAABB& GetAABB() const { return MeshHeader.AABB; }
 
     inline void SetHasSkin(bool Has) { MeshHasSkin = Has; }

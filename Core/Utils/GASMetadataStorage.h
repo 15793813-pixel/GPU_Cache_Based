@@ -37,6 +37,9 @@ public:
     //通过 GUID 查找元数据
     bool QueryAssetByGUID(uint64_t GUID, FGASAssetMetadata& OutMetadata) const;
 
+    // 通过Hash找到所有的.gsa文件
+    bool QueryAssetsByFileHash(uint64_t FileHash, std::vector<FGASAssetMetadata>& OutList);
+
     // 查找所有资产元数据
     std::vector<FGASAssetMetadata> QueryAllAssets() const;
 
