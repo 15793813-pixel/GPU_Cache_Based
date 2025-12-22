@@ -37,6 +37,7 @@
     <ClInclude Include="Core\Utils\GASMetadataStorage.h" />
     <ClInclude Include="Core\Utils\GASHashManager.h" />
     <ClInclude Include="Core\Utils\GASWindows.h" />
+    <ClInclude Include="Editor\GASUI.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Utils\GASAssetManager.cpp" />
@@ -47,8 +48,16 @@
     <ClCompile Include="Core\Utils\GASImporter.cpp" />
     <ClCompile Include="Core\Utils\GASMetadataStorage.cpp" />
     <ClCompile Include="Core\Utils\GASWindows.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\imgui.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\imgui_demo.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\imgui_draw.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\imgui_tables.cpp" />
+    <ClCompile Include="Dependency\include\imgui-master\imgui_widgets.cpp" />
     <ClCompile Include="Dependency\include\sqlite\shell.c" />
     <ClCompile Include="Dependency\include\sqlite\sqlite3.c" />
+    <ClCompile Include="Editor\GASUI.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -110,6 +119,7 @@
       <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\assimp;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\GLFW;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\imgui-master;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\sqlite;H:\Boost\boost_1_90_0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,6 +137,7 @@
       <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\assimp;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\GLFW;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\imgui-master;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\sqlite;H:\Boost\boost_1_90_0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,7 +153,7 @@
       <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Dependency\include;H:\Boost\boost_1_90_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\assimp;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\GLFW;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\imgui-master;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\sqlite;H:\Boost\boost_1_90_0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -160,6 +171,7 @@
       <PreprocessorDefinitions>NOMINMAX</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\assimp;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\GLFW;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\imgui-master;H:\GPU_Cache_Based\MyAnimationSystem\Dependency\include\sqlite;H:\Boost\boost_1_90_0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

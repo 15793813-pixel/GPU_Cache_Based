@@ -88,6 +88,12 @@
     <Filter Include="源文件\Dependecy">
       <UniqueIdentifier>{739e5c1c-5cf2-43c8-a7a3-886841c0565c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\Editor">
+      <UniqueIdentifier>{f726afc2-6099-4897-b275-f6a5cdee6149}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Editor">
+      <UniqueIdentifier>{a4897527-0c25-4389-a9df-391a0c1e4888}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\Types\GASCoreTypes.h">
@@ -144,6 +150,9 @@
     <ClInclude Include="Core\Types\GASAssimpHeader.h">
       <Filter>头文件\Core\Types</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\GASUI.h">
+      <Filter>头文件\Editor</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Utils\GASDataConverter.cpp">
@@ -178,6 +187,30 @@
     </ClCompile>
     <ClCompile Include="Core\Utils\GASWindows.cpp">
       <Filter>源文件\Core\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\GASUI.cpp">
+      <Filter>源文件\Editor</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\imgui.cpp">
+      <Filter>源文件\Dependecy</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\imgui_demo.cpp">
+      <Filter>源文件\Dependecy</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\imgui_draw.cpp">
+      <Filter>源文件\Dependecy</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\imgui_tables.cpp">
+      <Filter>源文件\Dependecy</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\imgui_widgets.cpp">
+      <Filter>源文件\Dependecy</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\backends\imgui_impl_glfw.cpp">
+      <Filter>源文件\Dependecy</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependency\include\imgui-master\backends\imgui_impl_opengl3.cpp">
+      <Filter>源文件\Dependecy</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

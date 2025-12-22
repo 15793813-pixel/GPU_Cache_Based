@@ -3,6 +3,8 @@
 #include "Core/Utils/GASAssetManager.h"
 #include "Core/Types/GASConfig.h"
 #include "Core/Utils/GASDebug.h"
+#include "Editor/GASUI.h"
+
 
 
 int main()
@@ -13,9 +15,17 @@ int main()
     EnsureDirectoriesExist();
     //数据库初始化
     GASAssetManager::Get().GetGASMetadataStorage().Initialize(GAS_CONFIG::DATABASE_PATH);
+    if (!GASUI::Initialize())
+    {
+        GAS_LOG_ERROR("Failed to initialize Editor UI.");
+        return -1;
+    }
 
-    RunImportTest("Assets/Raw/TestSkin.fbx");
-    RunImportTest("Assets/Raw/TestSkin.fbx");
+    // 2. 进入主循环 (RunLoop 会一直运行直到窗口关闭)
+    GASUI::RunLoop();
+
+    // 3. 清理
+    GASUI::Shutdown();
 
     return 0;
 }

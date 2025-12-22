@@ -1,1 +1,7 @@
-[18:56:51] [INFO] Import SUCCESS. Main GUID: 17014514890109803771,FileNme: TestSkin.fbx
+[11:31:44] [INFO] UI: Starting Import Process...
+[11:31:46] [INFO] Import SUCCESS. Main GUID: 9836286033659919343,FileNme: TestSkin.fbx
+[11:31:46] [INFO] UI: Source file backed up to H:\GPU_Cache_Based\MyAnimationSystem\Assets\Sources\TestSkin.fbx
+[11:31:52] [INFO] [UI] Duplicate file detected at: TestSkin\9836286033659919343.skeleton.gas
+[11:32:01] [INFO] UI: Starting Import Process...
+[11:32:01] [INFO] Asset content identical, skipping: H:\GPU_Cache_Based\MyAnimationSystem\Assets\Raw\TestSkin.fbx
+[11:32:01] [INFO] UI: Source file backed up to H:\GPU_Cache_Based\MyAnimationSystem\Assets\Sources\TestSkin.fbx

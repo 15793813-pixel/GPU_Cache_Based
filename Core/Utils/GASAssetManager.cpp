@@ -108,6 +108,7 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
             Metadata.Type = EGASAssetType::Skeleton;
             Metadata.BinaryFilePath = RelativePath;
             Metadata.BoneCount = SkeletonAsset->GetNumBones();
+            Metadata.FileHash = CurrentFileHash;
 
             MetadataStorage.RegisterAsset(Metadata);
 
