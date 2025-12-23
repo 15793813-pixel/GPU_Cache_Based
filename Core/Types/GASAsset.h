@@ -2,6 +2,13 @@
 #include "GASArray.h"
 #include "GASCoreTypes.h"
 
+//submesh
+struct FGASSubMesh
+{
+    uint32_t IndexStart = 0;   
+    uint32_t IndexCount = 0;  
+    int32_t MaterialIndex = 0; 
+};
 
 class GASAsset
 {
@@ -151,6 +158,9 @@ public:
 
     // 注意：这里包含了 Position, Normal, UV, *BoneIndices*, *BoneWeights*
     GASArray<FGASSkinVertex> Vertices;
+
+    //纹理
+    std::string DiffuseTexturePath;
 
     //  索引数据 认为每三个点组成三角形，直接三个三个读取
     GASArray<uint32_t> Indices;

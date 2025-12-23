@@ -18,6 +18,7 @@ public:
 
 private:
     //画地面参考网格：
+    static void DrawLine(const FGASVector3& Start, const FGASVector3& End, const FGASVector3& Color);
     static void DrawGrid();
 
     static void RenderImporterPanel();   // 左侧面板 

@@ -34,7 +34,7 @@ private:
     bool ProcessAnimations(const aiScene* Scene, const GASSkeleton* Skeleton, std::vector<std::shared_ptr<GASAnimation>>& TargetAnimList);
 
     //处理mesh
-    bool ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, GASMesh* TargetMesh);
+    bool ProcessMesh(const aiScene* Scene, const aiMesh* Mesh, const GASSkeleton* Skeleton, GASMesh* TargetMesh);
 
     // 辅助工具
 

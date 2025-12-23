@@ -156,6 +156,43 @@ uint64_t GASAssetManager::ImportAsset(const std::string& SourceFilePath)
     {
         if (!MeshAsset) continue;
 
+        std::string& TexPath = MeshAsset->DiffuseTexturePath;
+        if (TexPath.empty())
+            // 计算源文件的绝对路径
+        {
+            fs::path FbxDir = fs::path(SourceFilePath).parent_path();
+            fs::path TexSourceAbsPath = FbxDir / TexPath;
+
+            // 目标: .../Assets/Textures/资产名/
+            fs::path TexCacheDir = fs::path(GAS_CONFIG::TEXTURE_ARCHIVE_PATH) / FolderName;
+
+
+            if (!fs::exists(TexCacheDir)) {
+                fs::create_directories(TexCacheDir);
+            }
+
+            //计算目标文件的绝对路径
+            std::string TexFileName = TexSourceAbsPath.filename().string();
+            fs::path TexTargetAbsPath = TexCacheDir / TexFileName;
+
+            // 执行文件拷贝
+            if (fs::exists(TexSourceAbsPath))
+            {
+                try {
+                    fs::copy_file(TexSourceAbsPath, TexTargetAbsPath, fs::copy_options::overwrite_existing);
+                    GAS_LOG("Import: Copied texture to %s", TexTargetAbsPath.string().c_str());
+                }
+                catch (const std::exception& e) {
+                    GAS_LOG_ERROR("Import: Failed to copy texture: %s", e.what());
+                }
+            }
+            else
+            {
+                GAS_LOG_WARN("Import: Source texture not found at %s", TexSourceAbsPath.string().c_str());
+            }
+
+            TexPath = "Textures/" + FolderName + "/" + TexFileName;
+        }
         // 生成唯一 Mesh GUID
         std::string MeshKey = FolderName + "_Mesh_" + MeshAsset->AssetName;
 

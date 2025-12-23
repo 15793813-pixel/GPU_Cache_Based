@@ -562,7 +562,7 @@ void GASUI::RunLoop()
 }
 
 // 画线
-void DrawLine(const FGASVector3& Start, const FGASVector3& End, const FGASVector3& Color)
+void GASUI::DrawLine(const FGASVector3& Start, const FGASVector3& End, const FGASVector3& Color)
 {
     glLineWidth(2.0f);
     glBegin(GL_LINES);

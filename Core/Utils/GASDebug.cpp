@@ -98,7 +98,6 @@ bool RunImportTest(const std::string& SourceFBX)
 
 void GASDebugAssimp::DrawLine(const FGASVector3& Start, const FGASVector3& End, const FGASVector3& Color)
 {
-    // 使用 OpenGL 立即模式画线
     glLineWidth(2.0f); // 线宽
     glBegin(GL_LINES);
     glColor3f(Color.x, Color.y, Color.z);

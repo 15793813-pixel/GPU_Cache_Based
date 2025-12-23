@@ -13,7 +13,12 @@ namespace GAS_CONFIG
 
     // 导入源文件临时目录 (可选，用于存储导入的原始文件备份)
     constexpr const char* SOURCE_ARCHIVE_PATH = "Assets\\GAS_Cache\\Sources\\";
-}
+
+    //纹理存储
+    constexpr const char* TEXTURE_ARCHIVE_PATH = "Assets\\GAS_Cache\\Textures\\";
+}   
+
+
 
 // 核心常量与标识符 
 constexpr float DEFAULT_ANIMATION_FPS = 30.0f;

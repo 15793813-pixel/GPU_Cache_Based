@@ -77,7 +77,7 @@ bool GASImporter::ImportFromFile(const std::string& FilePath,
             NewMesh->SkeletonGUID = OutSkeleton->GetGUID();
 
             // ProcessMesh (负责提取蒙皮权重和顶点)
-            if (ProcessMesh(Mesh, OutSkeleton.get(), NewMesh.get()))
+            if (ProcessMesh(Scene,Mesh, OutSkeleton.get(), NewMesh.get()))
             {
                 OutMeshes.push_back(NewMesh);
             }
@@ -237,16 +237,30 @@ bool GASImporter::ProcessAnimations(const aiScene* Scene, const GASSkeleton* Ske
 }
 
 //Mesh逻辑处理
-bool GASImporter::ProcessMesh(const aiMesh* Mesh, const GASSkeleton* Skeleton, GASMesh* TargetMesh)
+bool GASImporter::ProcessMesh(const aiScene* Scene, const aiMesh* Mesh, const GASSkeleton* Skeleton, GASMesh* TargetMesh)
 {
     if (!Mesh->HasPositions() || !Mesh->HasBones() || Mesh->mNumBones == 0)
     {
         GAS_LOG_WARN("Mesh has no positions or bones, skipping skinning data extraction.");
         return false;
     }
+    std::string DiffusePath = "";
 
     // 映射骨骼名称到本地索引
     std::unordered_map<std::string, uint32_t> BoneNameMap;
+
+    if (Scene->HasMaterials())
+    {
+        const aiMaterial* Material = Scene->mMaterials[Mesh->mMaterialIndex];
+
+        aiString Path;
+        if (Material->GetTexture(aiTextureType_DIFFUSE, 0, &Path) == aiReturn_SUCCESS)
+        {
+            TargetMesh->DiffuseTexturePath = Path.C_Str();
+            std::replace(TargetMesh->DiffuseTexturePath.begin(), TargetMesh->DiffuseTexturePath.end(), '\\', '/');
+        }
+    }
+
     for (unsigned int i = 0; i < Mesh->mNumBones; ++i)
     {
         std::string name = GASDataConverter::NormalizeBoneName(Mesh->mBones[i]->mName.C_Str());
